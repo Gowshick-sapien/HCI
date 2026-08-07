@@ -6,23 +6,27 @@
 ---
 
 ### Executive Overview
-This document provides the definitive, publication-grade specification for the **codebase architecture, directory structure, module decomposition, and file-level design** of the project repository. It establishes strict software engineering boundaries aligned with the **Six Principled Architectural Layers**, ensuring modularity, type safety, testability, and deterministic real-time performance ($\le 29.5\text{ ms}$ total frame latency on CPU hardware).
+This document provides the definitive, publication-grade specification for the **complete repository ecosystem**, encompassing:
+1. **The Six-Layer Core Codebase (`src/`)** aligned with the principled architectural layers.
+2. **The Comprehensive Documentation Suite (`docs/`)** containing academic, technical, user, and API manuals.
+3. **The Academic Publication & LaTeX Preprint Package (`paper/`)** for peer-reviewed conference dissemination.
+4. **The Empirical Evaluation, Instruments & Replication Dataset Package (`evaluation/`, `data/`, `notebooks/`)**.
+5. **The Formal Deliverable Verification & Release Packaging (`deliverables/`)** mapping all Core Deliverables (D1–D5), Research Enhancements (E1–E3), and Documentation Artifacts (DOC1–DOC5).
+6. **The Automated Test Suite & Latency Benchmarks (`tests/`)**.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                               MASTER REPOSITORY ARCHITECTURE                                     │
+│                               MASTER REPOSITORY ECOSYSTEM                                        │
 ├──────────────────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                                  │
-│  [LAYER 1: PERCEPTION]      ──► src/perception/   (FaceMesh, Iris, SolvePnP, Hands, Smoothing)   │
-│  [LAYER 2: CALIBRATION]     ──► src/calibration/  (5-Phase Wizard, Pose Ellipsoid, Gaze Affine) │
-│  [LAYER 3: DECISION]        ──► src/decision/     (3A Fusion, 3B Tier-2 Dwell Gate, 3C Dispatch) │
-│  [LAYER 4: OBSERVATION]     ──► src/feedback/     (Temporal State Machine, 5 Negative Detectors) │
-│  [LAYER 5: ASSESSMENT]      ──► src/assessment/   (5A Metrics Engine, 5B Intelligent Gatekeeper) │
-│  [LAYER 6: LEARNING]        ──► src/learning/     (Micro SGD, Box Simplex Solver, Macro & SPRT)  │
-│  [PERSISTENCE & SCHEMAS]    ──► src/storage/      (Immutable ProfileSnapshot Store & Telemetry)  │
-│  [EXPLAINABILITY & UI]      ──► src/ui/           (PyQt6 Explainability HUD & Research Dashboard)│
-│  [EMPIRICAL EVALUATION]     ──► src/evaluation/   (Latin Square A/B Runner & Statistical Models) │
-│  [SYSTEM TEST SUITE]        ──► tests/            (Unit Invariant Tests, Integration & Latency)  │
+│  [CORE CODEBASE]            ──► src/             (6 Principled Layers, UI, Storage, Utilities)   │
+│  [DOCUMENTATION SUITE]      ──► docs/            (Proposals, SRS, Architecture, Manuals, APIs)   │
+│  [ACADEMIC PREPRINT & TEX]  ──► paper/           (LaTeX Manuscript, Figures, BibTeX References)  │
+│  [EVALUATION & DATASETS]    ──► evaluation/,     (Protocols, Questionnaires, Task Scripts,       │
+│                                 data/, notebooks/(Benchmark Datasets & Jupyter Analysis)         │
+│  [DELIVERABLES PACKAGING]   ──► deliverables/    (D1–D5 & E1–E3 Sign-Offs & Release Bundles)     │
+│  [AUTOMATED TEST SUITE]     ──► tests/           (Unit Invariants, Multi-Layer Integration, Perf)│
+│  [REPORTS & TELEMETRY]      ──► reports/, logs/  (Auto-Generated Markdown Reports & JSONL Logs)  │
 │                                                                                                  │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -36,35 +40,124 @@ adaptive-multimodal-hci/
 ├── .github/
 │   └── workflows/
 │       ├── test-suite.yml              # CI automated test runner & flake8/mypy linter
-│       └── benchmark.yml               # Automated frame latency & memory regression check
+│       ├── benchmark.yml               # Automated frame latency & memory regression check
+│       └── paper-build.yml             # Automated LaTeX compilation to PDF preprint
 ├── configs/
 │   ├── default_config.yaml             # System hyperparameters, thresholds & frame budgets
 │   ├── actions_config.yaml             # Action taxonomy, Tier-1/Tier-2 classification
 │   └── logging_config.yaml             # Telemetry log formatting & rotation rules
-├── docs/
-│   ├── adaptive-multimodal-hci-proposal.md            # Canonical Academic Proposal
-│   ├── adaptive-multimodal-hci-srs.md                 # ISO/IEC/IEEE 29148 SRS Specification
+├── data/                               # Open-Science Datasets & Synthetic Benchmarks
+│   ├── benchmark_traces/               # Pre-recorded landmark sequences for deterministic testing
+│   │   ├── subject_normal_posture.npz
+│   │   ├── subject_glasses_glare.npz
+│   │   ├── subject_rapid_fatigue.npz
+│   │   └── synthetic_drift_noise.npz
+│   └── synthetic_outliers/             # Controlled stress-test failure vectors
+├── deliverables/                       # Formal Release Packages & Sign-Off Artifacts
+│   ├── D1_perception_pipeline/         # Deliverable D1 release bundle, latency proof & sign-off
+│   │   ├── README.md
+│   │   └── verification_report.pdf
+│   ├── D2_fusion_engine/               # Deliverable D2 release bundle, simplex proof & sign-off
+│   ├── D3_calibration_wizard/          # Deliverable D3 release bundle & 5-phase validation log
+│   ├── D4_feedback_observer/           # Deliverable D4 release bundle & detector precision matrix
+│   ├── D5_runtime_assessment/          # Deliverable D5 release bundle & sample session reports
+│   ├── E1_dual_scale_engine/           # Enhancement E1 release bundle & macro state test logs
+│   ├── E2_explainability_hud/          # Enhancement E2 release bundle & HUD render benchmarks
+│   └── E3_research_dashboard/          # Enhancement E3 release bundle & UI sync benchmarks
+├── docs/                               # Comprehensive Technical & Academic Documentation
+│   ├── adaptive-multimodal-hci-proposal.md            # Canonical Academic Proposal (DOC1)
+│   ├── adaptive-multimodal-hci-srs.md                 # ISO/IEC/IEEE 29148 SRS (DOC2)
 │   ├── adaptive-multimodal-hci-deliverables.md        # Master Deliverables Specification
-│   ├── adaptive-multimodal-hci-architecture.md        # Technical System Architecture
-│   ├── adaptive-multimodal-hci-implementation-plan.md # 4-Week Engineering Roadmap
-│   ├── adaptive-multimodal-hci-repo-structure.md      # Repository Architecture (This Doc)
-│   └── Proposed_Innovations.md                        # Technical Innovations Deep-Dive
-├── profiles/                                          # Local JSON/SQLite user profile store
+│   ├── adaptive-multimodal-hci-architecture.md        # Technical System Architecture (DOC3)
+│   ├── adaptive-multimodal-hci-implementation-plan.md # 4-Week Engineering Roadmap (DOC4)
+│   ├── adaptive-multimodal-hci-repo-structure.md      # Repository Architecture (This Document)
+│   ├── Proposed_Innovations.md                        # Technical Innovations Deep-Dive
+│   ├── api/                                           # Subsystem API Reference Manuals
+│   │   ├── perception_api.md
+│   │   ├── calibration_api.md
+│   │   ├── decision_api.md
+│   │   ├── feedback_api.md
+│   │   ├── assessment_api.md
+│   │   └── learning_api.md
+│   ├── guides/                                        # User, Operator & Developer Guides
+│   │   ├── user_manual.md                             # End-user setup & interaction guide
+│   │   ├── calibration_guide.md                       # 5-phase onboarding walkthrough
+│   │   ├── developer_guide.md                         # Codebase contribution & architecture guide
+│   │   └── deployment_guide.md                        # Packaging, installer & OS permissions
+│   └── math/                                          # Theoretical Formulations & Proofs
+│       ├── simplex_projection_proof.md                # 1D dual bisection convergence proof
+│       ├── wald_sprt_derivation.md                    # Sequential log-likelihood boundary derivation
+│       └── uncertainty_propagation_model.md           # End-to-end C_update formulation
+├── evaluation/                         # Empirical Evaluation, Protocols & Instruments
+│   ├── protocols/                      # Human-subject study protocols & IRB materials
+│   │   ├── study_protocol.md                          # Counterbalanced A/B experimental design
+│   │   ├── participant_briefing.md                    # Scripted verbal onboarding & consent form
+│   │   └── latin_square_order.json                    # Cohort counterbalance order assignments
+│   ├── instruments/                    # Standardized UX & Psychometric Survey Questionnaires
+│   │   ├── sus_questionnaire.md                       # System Usability Scale (10 items, 0-100)
+│   │   ├── nasa_tlx_survey.md                         # Raw NASA-TLX 6-dimensional workload form
+│   │   └── adaptation_experience_scale.md             # 7-item custom adaptation rating scale
+│   ├── tasks/                          # Isomorphic task automation scripts & target sequences
+│   │   ├── task1_document_navigation.py
+│   │   ├── task2_window_management.py
+│   │   └── task3_media_player_control.py
+│   └── analysis/                       # Statistical analysis scripts
+│       ├── run_wilcoxon_tests.py                      # Paired non-parametric hypothesis tests
+│       └── run_linear_mixed_effects.py                # LME model (Condition * Order + (1|Subject))
+├── logs/                               # Session Telemetry & Runtime Logs
+│   ├── telemetry/                                     # JSONL formatted interaction records
+│   └── system/                                        # Execution trace and debug logs
+├── media/                              # Media, Diagrams & Walkthrough Assets
+│   ├── diagrams/                                      # Vector architecture & sequence diagrams (.svg)
+│   ├── ui_mockups/                                    # HUD overlay and dashboard UI mockups
+│   └── demo_recordings/                               # System demo walkthrough video (.mp4)
+├── notebooks/                          # Interactive Jupyter Research & Analysis Notebooks
+│   ├── 01_latency_and_framerate_profiling.ipynb       # Frame cycle & jitter distribution plots
+│   ├── 02_calibration_geometry_analysis.ipynb         # 3D pose ellipsoid & gaze affine residuals
+│   ├── 03_adaptation_convergence_curves.ipynb         # Weight trajectories & EWMA AG curves
+│   ├── 04_sprt_drift_detection_and_recovery.ipynb     # Sequential hypothesis likelihood traces
+│   └── 05_empirical_user_study_statistical_lme.ipynb  # Primary benchmark paper figures & tables
+├── paper/                              # Academic Conference Publication Package (DOC5)
+│   ├── main.tex                                       # LaTeX manuscript entry point (IEEE/ACM format)
+│   ├── references.bib                                 # Complete BibTeX bibliography
+│   ├── ieee_conference.cls                            # Style template class file
+│   ├── sections/                                      # Modular manuscript sections
+│   │   ├── 01_abstract.tex
+│   │   ├── 02_introduction.tex
+│   │   ├── 03_related_work.tex
+│   │   ├── 04_system_architecture.tex
+│   │   ├── 05_online_adaptation_engine.tex
+│   │   ├── 06_runtime_assessment_engine.tex
+│   │   ├── 07_empirical_evaluation.tex
+│   │   ├── 08_results_and_analysis.tex
+│   │   ├── 09_discussion_and_limitations.tex
+│   │   └── 10_conclusion.tex
+│   ├── figures/                                       # Publication-ready vector PDF figures
+│   │   ├── fig1_system_architecture.pdf
+│   │   ├── fig2_decision_sequence.pdf
+│   │   ├── fig3_convergence_curves.pdf
+│   │   ├── fig4_error_rate_comparison.pdf
+│   │   └── fig5_sprt_trajectory.pdf
+│   └── tables/                                        # LaTeX formatted benchmark tables
+│       ├── tab1_latency_breakdown.tex
+│       ├── tab2_quantitative_results.tex
+│       └── tab3_subjective_scores.tex
+├── profiles/                           # Local User Profile Storage Repository
 │   └── default_user.json                              # Default bootstrap profile template
-├── logs/                                              # Telemetry and session data store
-│   └── telemetry/                                     # JSONL formatted session logs
-├── reports/                                           # Auto-generated markdown session reports
-│   └── figures/                                       # Convergence & ECE chart png/svg files
-├── scripts/
+├── reports/                            # Automated Post-Session Diagnostic Markdown Reports
+│   ├── figures/                                       # Generated Matplotlib figures per session
+│   └── session_sample_report.md                       # Sample auto-generated executive report
+├── scripts/                            # Operational & Diagnostic CLI Scripts
 │   ├── run_system.py                   # Production launcher (Perception + Decision + HUD)
 │   ├── run_calibration.py              # Standalone interactive onboarding wizard
 │   ├── run_dashboard.py                # Standalone research dashboard launcher
 │   ├── run_benchmarks.py               # Frame cycle latency & CPU profiler script
-│   └── run_ab_study.py                 # Counterbalanced Latin Square A/B study runner
-├── src/
+│   ├── run_ab_study.py                 # Counterbalanced Latin Square A/B study runner
+│   └── generate_paper_figures.py       # Generates publication PDF charts from session logs
+├── src/                                # Core 6-Layer Python Package Source Code
 │   ├── __init__.py
 │   ├── main.py                         # Central pipeline coordinator & lifecycle manager
-│   ├── capture/                        # Video acquisition & hardware ingestion
+│   ├── capture/                        # Video acquisition & threading
 │   │   ├── __init__.py
 │   │   ├── video_stream.py             # Threaded camera capture worker with ring buffer
 │   │   └── frame_types.py              # RawFrame dataclass & capture configuration
@@ -135,7 +228,7 @@ adaptive-multimodal-hci/
 ├── tests/                              # Comprehensive Automated Test Suite
 │   ├── __init__.py
 │   ├── conftest.py                     # Synthetic landmark fixtures & mock video streams
-│   ├── unit/                           # Layer-by-layer isolated mathematical unit tests
+│   ├── unit/                           # Isolated unit tests for mathematical correctness
 │   │   ├── test_video_stream.py
 │   │   ├── test_face_mesh_extractor.py
 │   │   ├── test_head_pose_estimator.py
@@ -155,7 +248,7 @@ adaptive-multimodal-hci/
 │   │   ├── test_wald_sprt_detector.py
 │   │   ├── test_uncertainty_propagation.py
 │   │   └── test_profile_store.py
-│   ├── integration/                    # Multi-layer integration & data pipeline tests
+│   ├── integration/                    # Multi-layer pipeline verification
 │   │   ├── test_perception_pipeline.py
 │   │   ├── test_layer3_decoupling.py
 │   │   ├── test_closed_loop_feedback.py
@@ -164,279 +257,217 @@ adaptive-multimodal-hci/
 │       ├── test_frame_latency.py
 │       └── test_memory_footprint.py
 ├── .gitignore
-├── Makefile                            # Convenience build, test, lint & format commands
+├── Makefile                            # Convenience build, test, lint, paper & benchmark targets
 ├── README.md                           # Master project README & documentation portal
 ├── pyproject.toml                      # Modern PEP 517/518 build & dependency configuration
-└── requirements.txt                    # Locked production & testing dependency list
+└── requirements.txt                    # Locked production, test & publication dependencies
 ```
 
 ---
 
-## 2. Detailed Package & Subpackage Specification
+## 2. Detailed Documentation Architecture (`docs/`)
 
----
-
-### 2.1 Package: `src/capture/`
-* **Purpose**: Hardware video capture management operating in an isolated high-priority thread to prevent frame dropping.
-* **Key Files**:
-  * `video_stream.py`:
-    * Class `VideoStreamReader(threading.Thread)`: Ingests frames at native $30\text{ FPS}$ from OpenCV `cv2.VideoCapture` into a lock-free double-buffered queue.
-    * Method `get_latest_frame() -> Optional[RawFrame]`: Returns the most recent frame with zero-copy reference.
-  * `frame_types.py`:
-    * Dataclass `RawFrame`: Encapsulates `image_rgb: np.ndarray`, `timestamp_ms: float`, `frame_index: int`, and `camera_lux_est: float`.
-
----
-
-### 2.2 Package: `src/perception/` (Layer 1: Perception)
-* **Purpose**: Computer vision extraction and spatial-temporal coordinate filtering.
-* **Key Files**:
-  * `face_mesh_extractor.py`:
-    * Class `FaceMeshExtractor`: Manages MediaPipe FaceMesh model. Computes normalized iris offsets $(r_x, r_y)$ and Eye Aspect Ratio ($\text{EAR}$).
-    * Method `process(frame: np.ndarray) -> GazeLandmarkResult`.
-  * `head_pose_estimator.py`:
-    * Class `HeadPoseEstimator`: Solves Levenberg-Marquardt Perspective-n-Point (SolvePnP) using 6 canonical 3D facial landmarks and camera matrix $\mathbf{K}$.
-    * Method `estimate_pose(landmarks: np.ndarray) -> Tuple[float, float, float]`: Returns continuous `(yaw, pitch, roll)` in degrees.
-  * `hand_pose_extractor.py`:
-    * Class `HandPoseExtractor`: Manages MediaPipe Hands model. Extracts 21 3D landmarks, calculates pinch distance $d_{\text{pinch}}$, palm normal $\mathbf{n}_{\text{palm}}$, and wrist velocity $\mathbf{v}_{\text{wrist}}$.
-    * Method `process(frame: np.ndarray) -> HandLandmarkResult`.
-  * `holt_winters_filter.py`:
-    * Class `AdaptiveHoltWintersFilter`: Implements double exponential smoothing dynamically scaled by velocity $\alpha_t = \text{clip}(\alpha_0 + \gamma \|\mathbf{v}\|, 0.20, 0.85)$.
-    * Method `filter(coord: np.ndarray, velocity: float) -> np.ndarray`.
-  * `feature_pipeline.py`:
-    * Class `PerceptionPipeline`: Coordinates all extractors, applies smoothing, estimates sensor covariance $\boldsymbol{\Sigma}_{\text{sensor}}$, and emits the consolidated `FeatureVector`.
-
----
-
-### 2.3 Package: `src/calibration/` (Layer 2: Calibration)
-* **Purpose**: 60–90 second interactive onboarding wizard and user profile bootstrapping.
-* **Key Files**:
-  * `wizard_controller.py`:
-    * Class `CalibrationWizardController`: State machine managing transitions across Phases A through E.
-    * Method `advance_phase() -> CalibrationPhaseState`.
-  * `geometry_profiler.py`:
-    * Class `GeometryProfiler`: Computes the 95% neutral pose ellipsoid $\mathcal{E}_{\text{head}} = (\boldsymbol{\mu}_{\text{pose}}, \boldsymbol{\Sigma}_{\text{pose}}^{-1})$ and fits the 5-point gaze 2D affine matrix $\mathbf{M}_{\text{gaze}}$.
-  * `tempo_estimator.py`:
-    * Class `TempoEstimator`: Computes user visual-motor reaction tempo $\tau_{\text{user}} \in [0.35\text{s}, 0.95\text{s}]$.
-  * `variance_weight_init.py`:
-    * Class `VarianceWeightInitializer`: Generates initial weights inversely proportional to sensor noise $\tilde{w}_i \propto 1/\sigma_i^2$ and projects onto the box simplex (`Profile v1`).
-
----
-
-### 2.4 Package: `src/decision/` (Layer 3: Decision & Safety Engine)
-* **Purpose**: Decoupled confidence fusion, safety reasoning, and native OS command dispatching.
-* **Key Files**:
-  * `confidence_fuser.py`:
-    * Class `ConfidenceFuser`: Vectorized dot product $S_a(\mathbf{x}) = \mathbf{w}_a^T \mathbf{x} = \sum w_i s_i$.
-  * `static_baseline_engine.py`:
-    * Class `StaticBaselineEngine`: Hardcoded boolean IF-THEN rule engine used as the control condition in A/B experiments.
-  * `intent_evaluator.py`:
-    * Class `IntentEvaluator`: Evaluates $S_a(\mathbf{x}) \ge \theta_a$ and refractory lockouts, generating `IntentCandidate`.
-  * `safety_gatekeeper.py`:
-    * Class `SafetyGatekeeper`: Evaluates User-Relative Tier-2 Gate $\theta_{\text{tier2}, a} = \min(0.95, \max(\theta_a + 0.15, \mu_S + 1.5\sigma_S))$, manages $600\text{ ms}$ visual dwell progress, and arms $3.0\text{ s}$ undo hook.
-  * `action_dispatcher.py`:
-    * Class `ActionDispatcher`: Executes native OS events via `pyautogui` / `win32api` and dispatches `ActionContext` to Layer 4.
-
----
-
-### 2.5 Package: `src/feedback/` (Layer 4: Implicit Feedback Observer)
-* **Purpose**: Temporal state machine and asynchronous sub-detectors monitoring user behavior.
-* **Key Files**:
-  * `temporal_state_machine.py`:
-    * Class `TemporalFeedbackStateMachine`: Manages active `ActionContextQueue` ring buffer, enforcing 200ms Refractory Window, 1.8s Correction Window, and Stability Expiration.
-  * `undo_hook_detector.py`:
-    * Class `UndoHookDetector`: Low-level hook intercepting `Ctrl+Z`, `Alt+Left`, `Ctrl+Shift+T` on target process ID.
-  * `reversal_detector.py`:
-    * Class `ReversalDetector`: Intercepts directional oppositional continuous commands (Scroll Down $\to$ Scroll Up).
-  * `retry_detector.py`:
-    * Class `RetryDetector`: Identifies rapid duplicate gesture retries ($\ge 2$ within $1.2\text{ s}$).
-  * `dismissal_detector.py`:
-    * Class `DismissalDetector`: Tracks immediate window/tab closures within $1.5\text{ s}$.
-  * `override_detector.py`:
-    * Class `OverrideDetector`: Captures sudden physical mouse ($>800\text{ px/s}$) or keyboard intervention.
-
----
-
-### 2.6 Package: `src/assessment/` (Layer 5: Runtime Assessment Engine - RAE)
-* **Purpose**: Continuous health metrics calculation, update gatekeeping, and session reporting.
-* **Key Files**:
-  * `runtime_metrics_engine.py` (Engine 5A):
-    * Class `RuntimeMetricsEngine`: Computes EWMA Adaptation Gain ($AG_t$), Sliding Learning Velocity ($LV_t$), Weight Stability Index ($WSI_t$), Adaptation Confidence Index ($ACI_t$), Expected Calibration Error ($ECE_t$), Recovery Rate ($RR$), and Drift Recovery Time ($DRT$).
-  * `learning_gatekeeper.py` (Engine 5B):
-    * Class `LearningGatekeeper`: Validates 6 rejection rules (Sample floor $k \ge 3$, Confidence floor $c_{fb} \ge 0.40$, Neutral suppression, Macro drift lockout $S_m \ge 2.89$, Contradiction resolution, Sensor SNR check) and emits `GatekeeperVerdict(APPROVE/REJECT)`.
-  * `session_report_generator.py`:
-    * Class `SessionReportGenerator`: Compiles session KPIs, significant event logs, and 5 matplotlib convergence plots into a clean markdown document.
-  * `failure_classifier.py`:
-    * Class `FailureClassifier`: Enforces the 4-Stage Failure Governance Subsystem (Detection $\to$ Classification $\to$ Severity $\to$ Corrective Policy).
-
----
-
-### 2.7 Package: `src/learning/` (Layer 6: Online Learning & Optimization)
-* **Purpose**: Real-time micro-adaptation, exact simplex projection, and epoch macro-adaptation.
-* **Key Files**:
-  * `micro_sgd_optimizer.py`:
-    * Class `MicroSGDOptimizer`: Ambiguity-gated per-interaction parameter updater for $\mathbf{w}_a$ and $\theta_a$.
-  * `simplex_projector.py`:
-    * Class `BoxSimplexProjector`: Exact 1D dual bisection root solver enforcing $\sum w_i = 1.0$ and $w_i \in [0.05, 0.85]$.
-  * `macro_adaptation_engine.py`:
-    * Class `MacroAdaptationEngine`: Evaluates periodic epochs ($N=30\text{--}50$ interactions) and triggers `MERGE`, `FREEZE`, `DISCARD`, or `RECALIBRATE` policies.
-  * `wald_sprt_detector.py`:
-    * Class `WaldSPRTDetector`: Cumulative log-likelihood sequential hypothesis tester detecting environmental calibration drift ($S_m \ge 2.89$).
-  * `uncertainty_propagator.py`:
-    * Class `UncertaintyPropagator`: Computes global $C_{\text{update}}$ and modulates effective learning rate $\eta_{\text{eff}} = \eta_0 \cdot C_{\text{update}}$.
-
----
-
-### 2.8 Package: `src/storage/`
-* **Purpose**: Immutable schema definitions, SQLite/JSON persistence, and telemetry event streaming.
-* **Key Files**:
-  * `schemas.py`: Core dataclasses (`FeatureVector`, `IntentCandidate`, `ActionContext`, `FeedbackEvent`, `GatekeeperVerdict`, `ProfileSnapshot`).
-  * `profile_store.py`:
-    * Class `ProfileStore`: Thread-safe persistence engine managing versioned user profiles (`Profile v_k`).
-  * `telemetry_logger.py`:
-    * Class `TelemetryLogger`: Asynchronous non-blocking JSONL event logger writing detailed interaction logs.
-
----
-
-### 2.9 Package: `src/ui/`
-* **Purpose**: Visual explainability overlay, onboarding views, and interactive research dashboard.
-* **Key Files**:
-  * `explainability_hud.py`: Semi-transparent PyQt6 click-through overlay showing confidence bars, dwell ring, and health state badges.
-  * `wizard_view.py`: Fullscreen 5-phase interactive calibration wizard interface.
-  * `research_dashboard.py`: Multi-tab PyQt6 GUI with live ACI gauges, SPRT trajectory graphs, parameter evolution curves, and study manager.
-
----
-
-### 2.10 Package: `src/evaluation/`
-* **Purpose**: Standardized experimental protocol execution and statistical analysis.
-* **Key Files**:
-  * `study_manager.py`: Coordinates counterbalanced Latin Square A/B user studies ($A \to B$ vs. $B \to A$) with 5-minute washout intervals.
-  * `task_scripts.py`: Standardized isomorphic task automation routines (Document Navigation, Tab Management, Media Control).
-  * `statistical_analyzer.py`: Performs Wilcoxon Signed-Rank tests and Linear Mixed-Effects (LME) modeling.
-
----
-
-## 3. Automated Test Suite & Benchmark Architecture (`tests/`)
-
-Development enforces strict test-driven invariant verification across three testing tiers:
+The documentation suite is structured into four specialized tiers covering academic theory, engineering specifications, user manuals, and mathematical proofs:
 
 ```
-tests/
-├── conftest.py                         # Reusable synthetic fixtures, landmark mocks & video feeds
-├── unit/                               # Isolated unit tests for mathematical correctness
-│   ├── test_video_stream.py            # Validates zero-copy buffer & frame acquisition
-│   ├── test_face_mesh_extractor.py     # Validates blink suppression & normalized coordinates
-│   ├── test_head_pose_estimator.py     # Validates SolvePnP Euler angles & Mahalanobis confidence
-│   ├── test_hand_pose_extractor.py     # Validates pinch distance & wrist velocity derivation
-│   ├── test_holt_winters_filter.py     # Validates dynamic alpha scaling & jitter elimination
-│   ├── test_calibration_geometry.py    # Validates 95% ellipsoid & gaze affine perspective map
-│   ├── test_variance_weight_init.py    # Validates noise-variance inverse weighting
-│   ├── test_confidence_fuser.py        # Validates dot-product fusion score bounds [0.0, 1.0]
-│   ├── test_simplex_projection.py      # Validates sum(w_i)=1.0 and box constraints [0.05, 0.85]
-│   ├── test_safety_gatekeeper.py       # Validates Tier-2 dwell gating & 3.0s undo hook arming
-│   ├── test_feedback_state_machine.py  # Validates 200ms refractory lockout & 1.8s stability expiry
-│   ├── test_negative_sub_detectors.py  # Validates all 5 negative sub-detector event triggers
-│   ├── test_runtime_metrics_engine.py  # Validates mathematical derivations of AG, LV, WSI, ACI, ECE
-│   ├── test_learning_gatekeeper.py     # Validates all 6 gatekeeper rejection rules
-│   ├── test_micro_sgd_optimizer.py     # Validates ambiguity-gated SGD updates
-│   ├── test_macro_adaptation.py        # Validates MERGE, FREEZE, DISCARD, RECALIBRATE state logic
-│   ├── test_wald_sprt_detector.py      # Validates cumulative SPRT log-likelihood & alarm threshold
-│   ├── test_uncertainty_propagation.py # Validates C_update calculation & eta_eff scaling
-│   └── test_profile_store.py           # Validates ProfileSnapshot serialization & immutability
-├── integration/                        # Multi-layer pipeline verification
-│   ├── test_perception_pipeline.py     # End-to-end landmark to FeatureVector assembly
-│   ├── test_layer3_decoupling.py       # Validates independent execution of 3A, 3B, and 3C
-│   ├── test_closed_loop_feedback.py    # Traces full loop from gesture to parameter adaptation
-│   └── test_session_reporting.py       # Validates automated markdown report generation
-└── benchmarks/                         # Performance & resource budget verifications
-    ├── test_frame_latency.py           # Asserts total frame cycle <= 29.5ms on CPU hardware
-    └── test_memory_footprint.py        # Asserts total resident memory <= 350MB
+┌────────────────────────────────────────────────────────────────────────┐
+│                     DOCUMENTATION TIERS BREAKDOWN                      │
+├────────────────────────────────────────────────────────────────────────┤
+│  Tier 1: Canonical Academic & Engineering Specifications (Root)       │
+│  Tier 2: Subsystem API Reference Manuals (`docs/api/`)                 │
+│  Tier 3: User, Operator & Developer Onboarding Guides (`docs/guides/`) │
+│  Tier 4: Mathematical Formulations & Rigorous Proofs (`docs/math/`)    │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+### 2.1 Tier 1: Canonical Project Specifications
+* **`adaptive-multimodal-hci-proposal.md` (DOC1)**: Formal research proposal, scientific thesis, Research Questions (RQ1–RQ4), application domains, and 5-stage validation methodology.
+* **`adaptive-multimodal-hci-srs.md` (DOC2)**: ISO/IEC/IEEE 29148 compliant Software Requirements Specification detailing functional requirements (`FR-1.1` to `FR-9.5`), non-functional budgets, and traceability matrices.
+* **`adaptive-multimodal-hci-deliverables.md`**: Master breakdown of all Core Deliverables (D1–D5), Research Enhancements (E1–E3), and academic replication artifacts.
+* **`adaptive-multimodal-hci-architecture.md` (DOC3)**: Deep technical specification of the 6 principled layers, sequence diagrams, global uncertainty models, and data schemas.
+* **`adaptive-multimodal-hci-implementation-plan.md` (DOC4)**: 4-week execution roadmap, daily milestone breakdown, and test verification suite.
+* **`Proposed_Innovations.md`**: Deep dive into scientific contributions, comparison tables, and state-of-the-art positioning.
+
+### 2.2 Tier 2: Subsystem API Reference Manuals (`docs/api/`)
+* `perception_api.md`: Function signatures, parameters, and return types for FaceMesh, SolvePnP, Hands, and Holt-Winters filter.
+* `calibration_api.md`: API contracts for wizard state transitions, geometry fitting, and profile synthesis.
+* `decision_api.md`: Interfaces for Stage 3A fuser, Stage 3B safety gatekeeper, and Stage 3C action dispatcher.
+* `feedback_api.md`: Contracts for temporal state machine, ring buffer management, and 5 negative sub-detectors.
+* `assessment_api.md`: Interfaces for Engine 5A metrics engine, Engine 5B learning gatekeeper, and report generator.
+* `learning_api.md`: Parameters for micro-SGD updater, simplex bisection solver, macro state machine, and Wald SPRT.
+
+### 2.3 Tier 3: User & Developer Guides (`docs/guides/`)
+* `user_manual.md`: Installation steps, webcam positioning, desktop gesture dictionary, and HUD explanation.
+* `calibration_guide.md`: Step-by-step walkthrough of the 5-phase onboarding wizard (gaze target fixation, neutral pose hold, gesture sample).
+* `developer_guide.md`: Development setup, coding standards, branch conventions, running unit tests, and adding custom gestures.
+* `deployment_guide.md`: Packaging scripts, Windows/Linux OS permission setup (accessibility/keystroke hooking), and installer creation.
+
+### 2.4 Tier 4: Mathematical Formulations & Proofs (`docs/math/`)
+* `simplex_projection_proof.md`: Formal derivation and proof of convergence for the 1D dual bisection box-constrained simplex root-finding algorithm.
+* `wald_sprt_derivation.md`: Mathematical derivation of sequential log-likelihood decision boundaries ($A = 2.89, B = -2.25$) under Type I/II error tolerances ($\alpha = \beta = 0.05$).
+* `uncertainty_propagation_model.md`: Complete derivation of the unified global update confidence $C_{\text{update}}$ from sensor covariance to learning rate scaling.
+
+---
+
+## 3. Academic Publication & Preprint Package (`paper/`)
+
+The repository includes a complete, self-contained academic manuscript package formatted in standard double-column IEEE/ACM conference style (DOC5):
+
+```
+paper/
+├── main.tex                            # Root LaTeX document compiling to full paper PDF
+├── references.bib                      # Complete BibTeX bibliography (HCI & ML citations)
+├── ieee_conference.cls                 # Standard conference LaTeX document class
+├── sections/                           # Modular section source files
+│   ├── 01_abstract.tex                 # 250-word structured abstract & keywords
+│   ├── 02_introduction.tex             # Problem statement, motivation, and contributions
+│   ├── 03_related_work.tex             # Literature review (Multimodal HCI, Online Adaptation)
+│   ├── 04_system_architecture.tex      # Six-Layer decomposition & pipeline design
+│   ├── 05_online_adaptation_engine.tex # Micro SGD & box simplex projection algorithms
+│   ├── 06_runtime_assessment_engine.tex# Dual-engine RAE, health metrics & gatekeeper rules
+│   ├── 07_empirical_evaluation.tex     # Latin Square within-subjects user study methodology
+│   ├── 08_results_and_analysis.tex     # Quantitative KPIs, NASA-TLX, and LME models
+│   ├── 09_discussion_and_limitations.tex# Real-world viability, failure modes & edge cases
+│   └── 10_conclusion.tex               # Summary of findings & future research directions
+├── figures/                            # Publication-grade vector PDF figures (300+ DPI)
+│   ├── fig1_system_architecture.pdf    # Master closed-loop 6-layer architecture diagram
+│   ├── fig2_decision_sequence.pdf      # End-to-end interaction lifecycle sequence chart
+│   ├── fig3_convergence_curves.pdf    # Parameter weight trajectories across 50 interactions
+│   ├── fig4_error_rate_comparison.pdf  # False Activation / Rejection Rate boxplots (A vs B)
+│   └── fig5_sprt_trajectory.pdf        # Wald SPRT sequential log-likelihood drift traces
+└── tables/                             # LaTeX formatted tables
+    ├── tab1_latency_breakdown.tex      # Component latency budgets vs empirical measurements
+    ├── tab2_quantitative_results.tex   # FAR, FRR, TCT, and Correction Rate benchmarks
+    └── tab3_subjective_scores.tex      # SUS (0-100) and Raw NASA-TLX workload dimensions
 ```
 
 ---
 
-## 4. Configuration & Dependency Management
+## 4. Empirical Evaluation, Instruments & Replication Package (`evaluation/`)
 
-### 4.1 Production & Testing Dependencies (`requirements.txt`)
-```txt
-# Computer Vision & Machine Learning
-opencv-python>=4.8.0
-mediapipe>=0.10.9
-numpy>=1.24.0
-scipy>=1.11.0
+To support open-science replication and rigorous peer review, the repository contains all experimental protocols, psychometric instruments, and analysis notebooks:
 
-# Desktop GUI & Visual Explainability
-PyQt6>=6.5.0
-matplotlib>=3.7.0
-
-# OS Automation & Low-Level Hooking
-pyautogui>=0.9.54
-pynput>=1.7.6
-pywin32>=306; sys_platform == 'win32'
-
-# Utilities & Serialization
-pyyaml>=6.0.1
-dataclasses-json>=0.6.0
-
-# Testing & Quality Assurance
-pytest>=7.4.0
-pytest-cov>=4.1.0
-pytest-benchmark>=4.0.0
-flake8>=6.1.0
-mypy>=1.5.0
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│               EMPIRICAL EVALUATION & REPLICATION SUITE                 │
+├────────────────────────────────────────────────────────────────────────┤
+│  • Human-Subject Protocols (`evaluation/protocols/`)                   │
+│  • Standardized Survey Instruments (`evaluation/instruments/`)         │
+│  • Automated Task Sequences (`evaluation/tasks/`)                      │
+│  • Pre-Recorded Benchmark Traces (`data/benchmark_traces/`)           │
+│  • Statistical Analysis & Figures Notebooks (`notebooks/`)             │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 4.2 Modern Build Configuration (`pyproject.toml`)
-```toml
-[build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
+1. **Human-Subject Study Protocols (`evaluation/protocols/`)**:
+   - `study_protocol.md`: Complete within-subjects counterbalanced ($A \to B$ vs. $B \to A$) experimental procedure ($N = 4\text{--}6$), 5-minute washout period, and environment setup.
+   - `participant_briefing.md`: Standardized verbal onboarding script and informed consent template.
+   - `latin_square_order.json`: Randomized counterbalance order assignment table.
+2. **Psychometric Instruments (`evaluation/instruments/`)**:
+   - `sus_questionnaire.md`: 10-item System Usability Scale instrument with standard 1–5 Likert scoring.
+   - `nasa_tlx_survey.md`: Raw NASA-TLX instrument evaluating 6 workload subscales (Mental, Physical, Temporal, Performance, Effort, Frustration).
+   - `adaptation_experience_scale.md`: Custom 7-item 7-point Likert scale evaluating perceived adaptation smoothness, predictability, and recovery fluency.
+3. **Isomorphic Task Automation (`evaluation/tasks/`)**:
+   - `task1_document_navigation.py`: Multi-page PDF/document scrolling and targeted paragraph dwell tasks.
+   - `task2_window_management.py`: Browser tab switching, window resizing, and application switching.
+   - `task3_media_player_control.py`: Media play/pause, scrub, volume adjustment, and Tier-2 application close.
+4. **Interactive Jupyter Analysis Notebooks (`notebooks/`)**:
+   - `01_latency_and_framerate_profiling.ipynb`: Generates frame cycle latency histograms, CDF plots, and CPU/memory profiling charts.
+   - `02_calibration_geometry_analysis.ipynb`: Evaluates 95% posture ellipsoid fit quality and 5-point gaze affine RMSE residuals.
+   - `03_adaptation_convergence_curves.ipynb`: Visualizes per-action weight evolution $\mathbf{w}_a(t)$, threshold adaptation $\theta_a(t)$, and EWMA $AG_t$.
+   - `04_sprt_drift_detection_and_recovery.ipynb`: Plots Wald SPRT log-likelihood trajectories $S_m$ under simulated lighting and posture drift.
+   - `05_empirical_user_study_statistical_lme.ipynb`: Performs Wilcoxon Signed-Rank tests, computes Cohen's $d$, and fits Linear Mixed-Effects models.
 
-[project]
-name = "adaptive-multimodal-hci"
-version = "1.0.0"
-description = "Self-Evaluating Adaptive Multimodal Decision Architecture for Human-Computer Interaction"
-readme = "README.md"
-requires-python = ">=3.11"
-authors = [
-    { name = "Gowshick", email = "gowshick@example.com" }
-]
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
-    "Topic :: Scientific/Engineering :: Human Machine Interfaces",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence",
-]
+---
 
-[tool.pytest.ini_options]
-minversion = "7.0"
-addopts = "-ra -q --cov=src --cov-report=term-missing"
-testpaths = ["tests"]
+## 5. Deliverable Packaging & Release Manifest (`deliverables/`)
 
-[tool.mypy]
-python_version = "3.11"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
+Every Core Deliverable (D1–D5) and Research Enhancement (E1–E3) has a dedicated release bundle directory containing package metadata, invariant sign-off sheets, and verification test logs:
+
+| Deliverable ID | Release Bundle Path | Scope & Verification Invariant Summary | Release Artifacts |
+|---|---|---|---|
+| **D1** | `deliverables/D1_perception_pipeline/` | Layer 1 perception pipeline; latency $\le 20.5\text{ms}$, jitter $\le 1.2\text{px}$. | Invariant test log, latency benchmark report. |
+| **D2** | `deliverables/D2_fusion_engine/` | Layer 3A fuser & exact simplex solver ($\sum w_i = 1.0, w_i \in [0.05, 0.85]$). | Simplex mathematical proof, unit test logs. |
+| **D3** | `deliverables/D3_calibration_wizard/` | Layer 2 onboarding wizard ($\le 90\text{s}$ duration, gaze $\text{RMSE} \le 45\text{px}$). | 5-phase validation log, sample `Profile v1`. |
+| **D4** | `deliverables/D4_feedback_observer/` | Layer 3B safety gate (600ms dwell) & Layer 4 5-detector observer. | Sub-detector precision matrix, undo hook test log. |
+| **D5** | `deliverables/D5_runtime_assessment/` | Layer 5 dual RAE ($AG, LV, WSI, ACI, ECE, RR, DRT$ & 6 gatekeeper rules).| Gatekeeper outlier rejection logs, sample session report.|
+| **E1** | `deliverables/E1_dual_scale_engine/` | Layer 6 micro SGD, macro epoch state machine, and Wald SPRT ($S_m \ge 2.89$).| Macro state transition logs, SPRT drift recovery trace.|
+| **E2** | `deliverables/E2_explainability_hud/` | PyQt6 semi-transparent HUD overlay; render overhead $\le 1.0\text{ms}$ ($\le 2\%$ CPU).| HUD render latency benchmarks, video demo clip. |
+| **E3** | `deliverables/E3_research_dashboard/` | Multi-tab PyQt6 GUI with live telemetry, SPRT gauge, and study runner.| Dashboard sync logs, GUI walkthrough recording. |
+| **DOC1–5**| `docs/` & `paper/` | Proposal, SRS, Architecture, Plan, and LaTeX Conference Preprint. | Canonical Markdown documents & compiled `paper.pdf`.|
+
+---
+
+## 6. Convenience Build & Automation Tooling (`Makefile`)
+
+The repository provides automated targets for developer workflow, testing, paper compilation, and benchmarking:
+
+```makefile
+.PHONY: help install test unit-test integration-test benchmark lint format paper clean
+
+help:
+	@echo "Adaptive Multimodal HCI - Master Development Commands:"
+	@echo "  make install          - Install production and development dependencies"
+	@echo "  make test             - Run complete automated test suite (Unit + Integration)"
+	@echo "  make benchmark        - Run frame cycle latency & resource profiler"
+	@echo "  make lint             - Run flake8 and mypy type checking"
+	@echo "  make format           - Format codebase using black and isort"
+	@echo "  make paper            - Compile LaTeX conference paper preprint to PDF"
+	@echo "  make run              - Launch production application with Explainability HUD"
+	@echo "  make dashboard        - Launch empirical research dashboard"
+
+install:
+	pip install --upgrade pip
+	pip install -r requirements.txt
+	pip install -e .
+
+test:
+	pytest tests/ -v --cov=src --cov-report=term-missing
+
+unit-test:
+	pytest tests/unit/ -v
+
+integration-test:
+	pytest tests/integration/ -v
+
+benchmark:
+	python scripts/run_benchmarks.py
+
+lint:
+	flake8 src/ tests/
+	mypy src/
+
+format:
+	black src/ tests/ scripts/
+	isort src/ tests/ scripts/
+
+paper:
+	cd paper && pdflatex main.tex && bibtex main && pdflatex main.tex && pdflatex main.tex
+
+clean:
+	find . -type d -name "__pycache__" -exec rm -rf {} +
+	find . -type f -name "*.pyc" -delete
+	rm -rf .pytest_cache .coverage htmlcov/
+	cd paper && rm -f *.aux *.bbl *.blg *.log *.out *.toc *.synctex.gz
 ```
 
 ---
 
-## 5. Master Traceability & Verification Mapping
+## 7. Master Traceability Matrix: Deliverables to Repository Assets
 
-| Package / Module | Layer Responsibility | Key Deliverable | Primary Test Module | Performance Budget |
+| Master Deliverable ID | Deliverable Category | Primary Codebase Assets | Documentation & Paper Assets | Test & Verification Modules |
 |---|---|---|---|---|
-| `src/capture/` | Video Acquisition | D1 | `test_video_stream.py` | $< 5.0\text{ ms}$ |
-| `src/perception/` | Layer 1: Perception | D1 | `test_perception_pipeline.py` | $< 18.0\text{ ms}$ |
-| `src/calibration/` | Layer 2: Calibration | D3 | `test_calibration_geometry.py` | $\le 90\text{ s}$ total |
-| `src/decision/` | Layer 3: Decision & Safety | D2, D4 | `test_layer3_decoupling.py` | $< 2.5\text{ ms}$ |
-| `src/feedback/` | Layer 4: Observation | D4 | `test_feedback_state_machine.py`| $< 1.0\text{ ms}$ |
-| `src/assessment/` | Layer 5: Assessment (RAE) | D5 | `test_runtime_metrics_engine.py`| $< 1.5\text{ ms}$ |
-| `src/learning/` | Layer 6: Online Learning | E1 | `test_simplex_projection.py` | $< 1.0\text{ ms}$ |
-| `src/storage/` | Persistence & Telemetry | D3, D5 | `test_profile_store.py` | $< 20\text{ ms}$ IO |
-| `src/ui/` | Explainability HUD & Dash | E2, E3 | `test_explainability_hud.py` | $< 1.0\text{ ms}$ render |
-| `src/evaluation/` | Empirical A/B Study | D5 | `test_session_reporting.py` | Standalone |
+| **D1** | Perception Pipeline | `src/capture/`, `src/perception/` | `docs/api/perception_api.md`, `paper/sections/04_system_architecture.tex` | `tests/unit/test_face_mesh_extractor.py`, `tests/benchmarks/test_frame_latency.py` |
+| **D2** | Decision & Projection | `src/decision/confidence_fuser.py`, `src/learning/simplex_projector.py` | `docs/math/simplex_projection_proof.md`, `paper/sections/05_online_adaptation_engine.tex` | `tests/unit/test_simplex_projection.py`, `tests/unit/test_confidence_fuser.py` |
+| **D3** | Calibration Wizard | `src/calibration/`, `src/storage/profile_store.py` | `docs/guides/calibration_guide.md`, `docs/api/calibration_api.md` | `tests/unit/test_calibration_geometry.py`, `tests/unit/test_variance_weight_init.py` |
+| **D4** | Safety & Observation | `src/decision/safety_gatekeeper.py`, `src/feedback/` | `docs/api/feedback_api.md`, `paper/sections/04_system_architecture.tex` | `tests/unit/test_feedback_state_machine.py`, `tests/unit/test_negative_sub_detectors.py` |
+| **D5** | Runtime Assessment | `src/assessment/`, `src/evaluation/` | `docs/api/assessment_api.md`, `paper/sections/06_runtime_assessment_engine.tex` | `tests/unit/test_runtime_metrics_engine.py`, `tests/unit/test_learning_gatekeeper.py` |
+| **E1** | Dual-Scale Adaptation | `src/learning/` | `docs/math/wald_sprt_derivation.md`, `paper/sections/05_online_adaptation_engine.tex` | `tests/unit/test_macro_adaptation.py`, `tests/unit/test_wald_sprt_detector.py` |
+| **E2** | Explainability HUD | `src/ui/explainability_hud.py` | `docs/guides/user_manual.md`, `paper/figures/fig1_system_architecture.pdf` | `tests/unit/test_explainability_hud.py`, `media/ui_mockups/` |
+| **E3** | Research Dashboard | `src/ui/research_dashboard.py` | `docs/guides/developer_guide.md`, `notebooks/` | `tests/unit/test_research_dashboard.py`, `evaluation/` |
+| **DOC1–5** | Master Documentation | `docs/`, `paper/` | `adaptive-multimodal-hci-proposal.md`, `adaptive-multimodal-hci-srs.md`, `paper/main.tex` | CI workflow `.github/workflows/paper-build.yml` |
 
 ---
 
-## 6. Conclusion
-This Base Repository Structure specification establishes the definitive architectural hierarchy for the codebase. With clean module boundaries, strict typing contracts, and comprehensive unit/integration test coverage, it guarantees a robust, maintainable, and high-performance implementation.
+## 8. Conclusion
+This Base Repository Structure specification provides the complete, unambiguous architectural blueprint for the entire project ecosystem. By embedding first-class directories for academic publication (`paper/`), empirical user study protocols (`evaluation/`), reproducible research notebooks (`notebooks/`), formal deliverable sign-offs (`deliverables/`), and multi-tiered documentation (`docs/`), it ensures that every engineering, research, and documentation requirement is fully realized.

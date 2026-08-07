@@ -1,75 +1,115 @@
-# Project Implementation Plan (v2.3)
+# Project Implementation Plan & Engineering Roadmap
 
-## Adaptive Context-Aware Multimodal Human-Computer Interaction System
-
----
-
-## Document Metadata
-* **Project Title**: Adaptive Context-Aware Multimodal Human-Computer Interaction System
-* **Document Type**: Project Implementation Plan & Engineering Roadmap
-* **Status**: Active / Definitive Baseline Specification (v2.3)
-* **Target Environment**: Windows / macOS / Linux (Python 3.11+, Standard Webcam)
+## Project Title
+# Self-Evaluating Adaptive Multimodal Decision Architecture for Human-Computer Interaction
 
 ---
 
-## 1. Project Overview
+## 1. Project Overview & Formal Research Objectives
 
 ### Objective
-The objective of this project is to build, validate, and benchmark a real-time, non-intrusive Human-Computer Interaction (HCI) system that combines vision-based eye focus, head pose orientation, and hand gesture tracking. The system personalizes decision thresholds and modality confidence weightings per user via online updates driven by implicit interaction feedback, operating efficiently on consumer CPU hardware without offline retraining.
+To engineer, validate, and benchmark a real-time, non-intrusive Human-Computer Interaction (HCI) framework combining ocular gaze, head pose orientation, and hand gesture tracking. The system dynamically personalizes decision thresholds and modality confidence weights per user via online updates driven by implicit behavioral feedback, continuously monitored and validated by a dedicated **Runtime Assessment Engine (RAE)**.
 
-### Key Architectural Pillars (v2.3)
-1. **Decoupled Online SGD**: Online parameter adaptation that decouples weight updates (suppressed near decision boundaries to avoid jitter) from threshold updates (active across boundary events).
-2. **Exact Box-Constrained Simplex Projection**: 1D bisection dual projection ensuring weights satisfy $\sum w_i = 1$ and $w_i \in [0.05, 0.85]$.
-3. **Hierarchical Wald SPRT Drift Detection**: Per-action and global sequential probability ratio testing preventing spurious recalibrations while capturing genuine performance degradation.
-4. **User-Relative Adaptive Safety Gating**: Tier-2 state-altering actions dynamically gated relative to the user's observed confidence distribution with minimum sample floors.
-5. **Tiered Evaluation Strategy**: Feasibility-aligned $N=4\text{--}6$ within-subjects counterbalanced pilot for Core Deliverable (D5), with full Latin-Square $N=12\text{--}16$ LME study reserved for Stretch (E3).
+### Research Questions (RQs)
+* **RQ1 (Personalization Effectiveness)**: Does online personalization via implicit feedback significantly reduce interaction errors (False Activation Rate, False Rejection Rate) and Task Completion Time compared to static-rule multimodal fusion baselines?
+* **RQ2 (Implicit Supervision Viability)**: Can continuous, decay-weighted implicit feedback provide sufficient supervision to steer parameter updates without requiring explicit user labeling?
+* **RQ3 (Runtime Self-Assessment Accuracy)**: Can a dedicated runtime assessment engine reliably determine when an interaction signal is trustworthy, and quantify whether updates improve or degrade interaction quality in real time?
+* **RQ4 (Longitudinal Retention & Robustness)**: Can learned user profiles maintain stability and reduce cold-start friction across multiple sessions, while robustly adapting to drift via sequential testing?
 
 ---
 
-## 2. Deliverables & Capabilities Breakdown
+## 2. Architectural Deliverables Breakdown
+
+| Deliverable ID | Component Name | Primary Scope & Architectural Responsibilities |
+|---|---|---|
+| **D1** | **Multimodal Perception Layer** | Threaded webcam ingestion (30 FPS), MediaPipe FaceMesh/Iris + Hands, SolvePnP head pose, and Holt-Winters adaptive smoothing filter. |
+| **D2** | **Weighted Decision Engine & Projection** | Vectorized confidence fusion ($S_a(\mathbf{x}) = \mathbf{w}_a^T \mathbf{x}$), exact 1D bisection box-constrained simplex projection solver ($w_i \in [0.05, 0.85]$). |
+| **D3** | **Interactive Calibration Wizard** | 60–90 second 5-phase onboarding capturing gaze affine mapping $\mathbf{M}_{\text{gaze}}$, 95% pose ellipsoid $\mathcal{E}_{\text{head}}$, tempo $\tau_{\text{user}}$, and variance-informed initial weights (`Profile v1`). |
+| **D4** | **Safety Dispatcher & Feedback Observer** | Decoupled Layer 3B (Tier-2 User-Relative Safety Gate) and Layer 4 Temporal State Machine with 5 asynchronous negative sub-detectors and continuous decay confidence $c_{fb}(\Delta t)$. |
+| **D5** | **Runtime Assessment Engine (RAE)** | Dual-engine RAE: 5A Metrics Engine ($AG_t, LV_t, WSI_t, ACI_t, ECE_t, RR, DRT$) + 5B Intelligent Multi-Criteria Decision Validator, plus automated Session Report Generator. |
+| **E1** | **Dual-Scale Adaptive Engine** | Real-time micro-adaptation (per-interaction SGD) + macro-adaptation state machine (`MERGE`, `FREEZE`, `DISCARD`, `RECALIBRATE`) with Wald SPRT drift detection. |
+| **E2** | **State-Aware Explainability HUD** | Low-overhead desktop overlay displaying live modality confidence bars, Tier-2 confirmation ring, and active health state badges (`LEARNING`, `IMPROVING`, `STABLE`, `DRIFTING`, `RECOVERING`). |
+| **E3** | **Empirical Research Dashboard** | Interactive diagnostic dashboard rendering real-time ACI gauge, SPRT trajectory, parameter evolution curves, and automated Latin Square study manager. |
+
+---
+
+## 3. Four-Week Execution Roadmap
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│                        CORE DELIVERABLES (MUST HAVE)                   │
+│                        4-WEEK EXECUTION ROADMAP                        │
 ├────────────────────────────────────────────────────────────────────────┤
-│ • D1: Multimodal Perception Layer (MediaPipe FaceMesh, Hands, SolvePnP)│
-│ • D2: Weighted Confidence Decision Engine + Box Simplex Projection    │
-│ • D3: Calibration Wizard with Tempo Profiling & Local Profile Store    │
-│ • D4: Tiered Safety Action Executor (Safe vs Relative Tier 2 + Undo)   │
-│ • D5: Evaluation Pilot (N=4–6 Counterbalanced A/B + Wilcoxon Tests)    │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    │
-                                    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                      STRETCH ENHANCEMENTS (OPTIONAL)                   │
+│  WEEK 1: Core Perception, Mathematical Decision Engine & Telemetry     │
+│  • Days 1–2: Threaded video pipeline, MediaPipe landmarks, Holt-Winters│
+│  • Days 3–4: Weighted fusion engine, 1D bisection simplex solver       │
+│  • Days 5–7: Telemetry logger, ActionContext schema, unit test suite   │
 ├────────────────────────────────────────────────────────────────────────┤
-│ • E1: Adaptive Online Engine (Decoupled SGD + Hierarchical SPRT)       │
-│ • E2: Real-Time Explainability HUD Overlay (Confidence + Dwell Timers) │
-│ • E3: Extended Statistical Study (N=12–16 Latin Square + LME Model)    │
+│  WEEK 2: Calibration, Safety Dispatcher & Runtime Assessment Engine    │
+│  • Days 8–10: 5-Phase calibration wizard & variance-informed weights   │
+│  • Days 11–12: Asynchronous implicit feedback observer (5 detectors)   │
+│  • Days 13–14: Layer 5 dual engines (Metrics + Intelligent Gatekeeper) │
+├────────────────────────────────────────────────────────────────────────┤
+│  WEEK 3: Dual-Scale Adaptive Engine & Core Pilot Benchmark             │
+│  • Days 15–17: Micro SGD + Macro epoch state machine + Wald SPRT       │
+│  • Days 18–19: Automated Session Report generator & convergence plots  │
+│  • Days 20–21: Within-subjects counterbalanced A/B pilot study (N=4–6) │
+├────────────────────────────────────────────────────────────────────────┤
+│  WEEK 4: Explainability HUD, Dashboard & Research Packaging            │
+│  • Days 22–24: State-aware HUD overlay (PyQt6/OpenGL) & Dashboard      │
+│  • Days 25–26: Statistical modeling (Wilcoxon Signed-Rank + Mixed LME)│
+│  • Days 27–28: Academic paper formatting, demo video, final release    │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 3. Four-Week Execution Schedule
+## 4. Automated Verification & Test Suite
 
-### Week 1: Core Perception & Mathematical Foundations (D1, D2)
-* **Perception Pipeline (D1)**: Threaded video frame capture (30 FPS) with MediaPipe FaceMesh, Hand Tracking, and SolvePnP Head Pose.
-* **Feature Vector Construction**: Normalized coordinates with rolling spatial-temporal smoothing filter.
-* **Decision & Projection Layer (D2)**: Weighted confidence sum intent evaluator with exact 1D bisection box-constrained simplex projection.
-* **Automated Unit Tests**: Validate projection invariants ($\sum w_i = 1, w_i \in [0.05, 0.85]$) and latency budgets ($<33\text{ms}/\text{frame}$).
+| Test Module | Target Component | Validation Criteria & Invariants Tested |
+|---|---|---|
+| `test_simplex_projection.py` | Layer 6 Optimizer | Verifies $\sum_{i=1}^3 w_{a, i} = 1.0 \pm 10^{-6}$ and $w_{a, i} \in [0.05, 0.85]$ across 10,000 random perturbation vectors. |
+| `test_layer3_decoupling.py` | Layer 3 Decision Sub-stages | Verifies independent execution of Fusion (3A), Safety Reasoning (3B), and Context Dispatcher (3C). |
+| `test_feedback_state_machine.py` | Layer 4 Feedback Observer | Verifies 200ms refractory lockout, continuous exponential decay $c_{fb}(\Delta t)$, and stability expiration at $t > 1.8\text{s}$. |
+| `test_negative_sub_detectors.py` | Layer 4 Sub-detectors | Verifies synthetic event attribution for OS Undo, Directional Reversals, Retries, Dismissals, and Overrides. |
+| `test_runtime_metrics_engine.py` | Layer 5A Metrics Engine | Verifies mathematical correctness of $AG_t, LV_t, WSI_t, ACI_t, ECE_t, RR, DRT$ against analytical ground-truth data. |
+| `test_learning_gatekeeper.py` | Layer 5B Gatekeeper | Validates all 6 rejection rules: sample floor, low confidence, neutral state, macro drift active, contradictions, and sensor noise. |
+| `test_macro_adaptation.py` | Layer 6 Macro Pipeline | Validates macro policy state transitions: `MERGE`, `FREEZE`, `DISCARD`, and `RECALIBRATE`. |
+| `test_uncertainty_propagation.py` | Global Uncertainty Model | Verifies calculation of $C_{\text{update}}$ and effective learning rate scaling $\eta_{\text{eff}} = \eta_0 \cdot C_{\text{update}}$. |
+| `test_profile_snapshot_store.py` | Profile Store | Verifies JSON serialization, deserialization, and immutability across sequential profile versions ($v_k \to v_{k+1}$). |
+| `test_latency_benchmark.py` | End-to-End Pipeline | Verifies end-to-end frame processing completes in $< 33\text{ms}$ on CPU. |
 
-### Week 2: Calibration, Safety Dispatcher & Feedback Capture (D3, D4)
-* **Calibration Wizard (D3)**: 60–90 second interactive setup capturing gaze offsets, neutral posture, and natural tempo baseline.
-* **Safety Dispatcher (D4)**: Tier 1 (safe/continuous) direct dispatch; Tier 2 (destructive) user-relative gating ($\mu_S + 1.5\sigma_S$, floor $\theta_a + 0.15$), 600ms visual dwell, and 3s grace-period undo stack.
-* **Feedback Detector (D4)**: Explicit undo hotkey tracking, rapid directional reversal detection, and stability window ($T_{\text{stability}} = 1.8\text{s}$) watcher.
+---
 
-### Week 3: Adaptive Online Learning & Core Pilot Evaluation (E1, D5)
-* **Adaptive Online Engine (E1)**: Decoupled SGD parameter updater ($g_{\text{weight}}$ ambiguity suppression, $g_{\text{thresh}}$ active boundary adaptation) and Hierarchical Wald SPRT drift detector.
-* **Core Benchmark Pilot (D5)**: Within-subjects counterbalanced A/B evaluation ($N=4\text{--}6$) across isomorphic task scripts.
-* **Statistical Analysis**: Compute FAR, FRR, TCT, and epoch correction rates with paired Wilcoxon signed-rank testing.
+## 5. Empirical Pilot Study Protocol & Statistical Analysis
 
-### Week 4: Explainability HUD, Documentation & Stretch Goals (E2, E3)
-* **Explainability HUD (E2)**: Semi-transparent overlay displaying per-modality confidence bars, active drift status, and dwell timer circles.
-* **Stretch Evaluation (E3)**: Optional expanded $N=12\text{--}16$ Latin Square study with NASA-TLX, SUS, and Linear Mixed-Effects analysis.
-* **Deliverables Packaging**: Final project report, demo video, verified literature review, and code repository release.
+### 5.1 Within-Subjects Counterbalanced A/B Protocol ($N = 4\text{--}6$)
+* **Design**: 2 Conditions (Condition A: Static Rule Baseline; Condition B: Self-Evaluating Adaptive Engine).
+* **Counterbalancing**: Cohort 1 ($N/2$ participants) completes $A \to B$; Cohort 2 ($N/2$ participants) completes $B \to A$.
+* **Washout Period**: 5-minute cognitive washout between conditions to eliminate residual motor bias.
+* **Isomorphic Task Sets**: 3 standardized desktop interaction scripts (Document Navigation, Tab & Window Management, Media Control) with randomized target sequences.
+
+### 5.2 Metrics & Statistical Modeling
+1. **Primary Objective Metrics**:
+   - False Activation Rate (FAR, errors/minute)
+   - False Rejection Rate (FRR, missed triggers/opportunity)
+   - Task Completion Time (TCT, seconds)
+   - Correction Rate across 5 session epochs (Epoch 1 to Epoch 5)
+2. **Subjective UX Instruments**:
+   - System Usability Scale (SUS, 0–100)
+   - Raw NASA-TLX (Mental, Physical, Temporal, Performance, Effort, Frustration)
+   - 7-Item Adaptation Scale (Perceived adaptability, predictability, recovery fluency, visual clarity)
+3. **Statistical Hypothesis Testing**:
+   - Paired Wilcoxon Signed-Rank Test ($\alpha = 0.05$) comparing Condition A vs. Condition B.
+   - Linear Mixed-Effects Model: $\text{Metric} \sim \text{Condition} + \text{Order} + \text{Condition} \times \text{Order} + (1|\text{Subject})$ to isolate genuine adaptation gains from ordering/practice effects.
+
+---
+
+## 6. Risk Mitigation & Fallback Matrix
+
+| Technical Risk | Likelihood | Impact | Architectural Mitigation Strategy |
+|---|---|---|---|
+| **Early Overfitting on Noisy Initial Cues** | Moderate | High | Gatekeeper warmup floor ($k \ge 3$ per action), box simplex constraints ($w_i \in [0.05, 0.85]$), and variance-informed bootstrap initialization. |
+| **Environmental Lighting & Pose Drift** | High | Moderate | Continuous Wald SPRT drift monitoring ($S_m \ge 2.89$), which locks micro-updates and triggers a 30s micro-recalibration. |
+| **MediaPipe Landmark Jitter Under CPU Load** | Moderate | Moderate | Adaptive Holt-Winters exponential smoothing filter dynamically scaling $\alpha_t$ with motion velocity. |
+| **OS Permission / Hooking Latency** | Low | Moderate | Dedicated daemon thread for OS hooks with lock-free ring buffer queueing. |
+| **Participant Learning Confound (Practice Effect)** | High | High | Counterbalanced Latin Square order design ($A \to B$ vs. $B \to A$) and isomorphic task scripts. |

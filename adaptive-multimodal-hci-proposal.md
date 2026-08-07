@@ -1,272 +1,202 @@
-# Project Proposal (v2)
+# Project Proposal
 
 ## Project Title
-### Adaptive Context-Aware Multimodal Human-Computer Interaction System
+# Self-Evaluating Adaptive Multimodal Decision Architecture for Human-Computer Interaction
 
 ---
 
-## 1. Introduction
+## 1. Executive Summary & Scientific Contribution
 
-Human-Computer Interaction (HCI) has moved from keyboard-and-mouse control toward natural interaction using speech, gesture, and gaze. Combining multiple cues (multimodal interaction) is well established as more robust than any single modality — but most implementations, including v1 of this proposal, stop at a **static rule-based fusion engine**: fixed IF-THEN combinations of eye focus, head pose, and hand gesture.
+Human-Computer Interaction (HCI) has progressively shifted from physical input peripherals (keyboards, mice) toward touchless, natural modalities including ocular gaze, head pose orientation, and spatial hand gestures. While combining multiple perceptual cues (multimodal fusion) provides theoretical resilience against single-sensor failures, conventional systems predominantly rely on **static, rule-based fusion engines** characterized by fixed boolean logic and population-averaged decision thresholds.
 
-That design is the part that makes the project feel generic — the vision pipeline (OpenCV + MediaPipe) is a commodity; dozens of student projects wire it up the same way. The genuinely interesting problem is what happens *after* feature extraction: how the system decides what a specific person meant, given that no two people gaze, gesture, or move their head the same way.
+Such static designs suffer from a fundamental limitation: they assume a standardized user that does not exist in reality. Differences in ocular physiology, corrective lenses, hand kinematics, motor stability, and seating posture cause static thresholds to systematically fail—manifesting as either excessive false activations (loss of control) or frustrating false rejections (sluggish responsiveness).
 
-This v2 proposal keeps the multimodal foundation but replaces the static rule engine with an **adaptive, per-user learning engine** that personalizes its thresholds and confidence weighting over time using implicit feedback — no explicit "training mode," no large dataset, no deep learning from scratch.
-
----
-
-## 2. Problem Statement
-
-Rule-based multimodal fusion improves on single-modality interfaces, but it inherits a hidden assumption: that one fixed set of thresholds works for every user. In practice:
-
-* Gaze estimation accuracy varies with eye shape, glasses, screen distance, and camera angle — a threshold tuned for one user misfires for another.
-* Gesture "pinch" or "swipe" detection depends on hand size, speed, and personal habit — what one user does crisply, another does ambiguously.
-* Head-pose tolerance for "facing screen" differs by posture and seating distance.
-
-A static engine has exactly two ways to fail: it's too strict (real intents get rejected) or too loose (accidental activations) — and it can't be both right for everyone at once. The result is the same false-activation problem multimodal fusion was supposed to solve, just pushed one level up.
-
-**Reframed problem**: build a multimodal interaction system whose decision boundaries *adapt to the individual user* over the course of normal use, without requiring an explicit calibration burden or a large training dataset.
+### Core Research Thesis
+This project introduces a **Runtime Self-Evaluating Adaptive Decision Architecture** that continuously observes, validates, and personalizes multimodal decision policies in real time through asynchronous implicit behavioral feedback. Operating without explicit user labeling, large external datasets, or deep learning computational overhead, the framework treats the multimodal vision pipeline as a non-intrusive domain vehicle. It introduces a closed-loop learning paradigm wherein real-time interaction feedback continuously personalizes per-user modality weights and activation thresholds under strict runtime validation gates.
 
 ---
 
-## 3. What Makes This Version Different
+## 2. Research Problem & Theoretical Motivation
 
-| Common capstone version (v1) | This version (v2) |
-|---|---|
-| Fixed IF-THEN rules per action | Weighted, confidence-scored fusion with per-user weights |
-| Same thresholds for every user | Short calibration wizard + continuous personalization |
-| No notion of "wrong prediction" | Implicit feedback loop (undo/repeat = negative signal) |
-| Black-box or nothing | Lightweight explainability HUD showing per-modality confidence |
-| Static forever | Drift detection — recalibrates when accuracy silently degrades (lighting change, fatigue, new glasses) |
+### 2.1 The Inherent Failure of Static Thresholds
+In multimodal interaction systems, decision boundaries are typically hardcoded or calibrated once across a cohort of lab participants. However, individual variability undermines this paradigm across three primary dimensions:
+1. **Ocular Variability**: Corneal reflection, pupil size, eye aperture, corrective eyewear, and screen distance introduce continuous noise into gaze estimation.
+2. **Kinematic Variability**: Gesture syntax (e.g., pinch aperture, swipe velocity, wrist acceleration) varies significantly across individuals based on anatomy, motor dexterity, and personal habits.
+3. **Postural & Biomechanical Drift**: Seating posture, head-tilt baselines, and ambient lighting shift naturally over extended sessions, causing fixed spatial thresholds to degrade silently.
 
----
+### 2.2 The Limitations of Conventional Solutions
+Existing attempts to address user diversity typically adopt one of two extremes:
+* *Cumbersome Explicit Calibration*: Requiring users to perform lengthy, multi-minute training tasks prior to interaction, which introduces severe onboarding friction.
+* *Black-Box Offline Deep Learning*: Training complex neural models on massive datasets, which requires substantial computational resources (GPUs), lacks interpretability, cannot run locally on standard consumer CPUs, and cannot adapt dynamically to real-time session drift.
 
-## 4. Proposed Solution
-
-The system keeps the three input modalities (eye focus, head orientation, hand gesture) but changes the decision layer:
-
-1. **Weighted confidence fusion** replaces boolean AND logic. Each modality contributes a confidence score (0–1); the fused score must clear a per-user, per-action threshold.
-2. **Calibration wizard** (60–90 seconds, ~10–15 sample interactions) bootstraps a per-user profile: gaze offset, typical gesture speed, head-pose tolerance.
-3. **Implicit feedback loop**: if a predicted action is immediately reversed (Ctrl+Z, closing what just opened, repeating the same gesture within ~1.5s), that's treated as a negative label. If the action is left in place, that's a mild positive label. No explicit "correct me" UI needed.
-4. **Online weight update**: a simple, interpretable update rule (not a black-box model) nudges per-modality weights and thresholds after each labeled event — cheap enough to run every frame on a laptop CPU.
-5. **Explainability HUD**: a small on-screen bar shows which modality drove a prediction and its confidence, so the user understands *why* something fired — which also improves the quality of their corrective feedback.
-6. **Drift detection**: if the correction rate rises over a rolling window, the system flags a recalibration prompt instead of silently degrading.
+**Research Objective**: To design, implement, and validate a lightweight, interpretable, and self-evaluating decision architecture that personalizes decision parameters dynamically during standard use via implicit supervisory signals.
 
 ---
 
-## 5. Objectives
+## 3. Formal Research Questions
 
-* Design a multimodal HCI system with eye focus, head orientation, and hand gesture inputs.
-* Replace static fusion rules with a weighted, confidence-scored decision engine.
-* Implement a short calibration wizard for per-user bootstrapping.
-* Implement an implicit feedback loop and lightweight online weight update.
-* Add an explainability HUD and drift detection.
-* Demonstrate, quantitatively, that personalization reduces false activations/rejections versus the static-rule baseline over a session.
+The architectural design, runtime metrics, and empirical validation protocols are structured around four formal research questions:
 
----
-
-## 6. Scope
-
-**In scope:**
-* Real-time webcam-based interaction
-* Vision-based feature extraction (MediaPipe)
-* Weighted confidence fusion with per-user adaptive weights
-* Lightweight online learning (linear/perceptron-style updates — not deep learning)
-* Calibration wizard and drift detection
-* Explainability HUD
-
-**Out of scope (unchanged from v1, plus one addition):**
-* Full eye-tracking hardware
-* Deep learning model training from scratch
-* Speech recognition
-* Large-scale, cross-user intent prediction / cloud sync
-* AR/VR interfaces
-* Multi-user simultaneous profiles (noted as a future extension, not v1)
+* **RQ1 (Personalization Effectiveness)**: Does online parameter personalization driven by implicit feedback significantly reduce interaction errors (False Activation Rate, False Rejection Rate) and Task Completion Time compared to static multimodal fusion baselines?
+* **RQ2 (Implicit Supervision Viability)**: Can continuous, decay-weighted implicit behavioral feedback provide sufficient supervision to steer parameter updates reliably without requiring explicit user labeling?
+* **RQ3 (Runtime Self-Assessment Accuracy)**: Can a dedicated runtime assessment engine reliably determine when an interaction signal is trustworthy, and accurately quantify whether online updates improve or degrade interaction quality in real time?
+* **RQ4 (Longitudinal Retention & Robustness)**: Can learned user profiles maintain stability and reduce cold-start friction across multiple sessions, while robustly adapting to environmental and behavioral drift via sequential hypothesis testing?
 
 ---
 
-## 7. Methodology (Updated Workflow)
+## 4. Principled Six-Layer Architecture
+
+To maintain strict modularity and eliminate monolithic coupling, the system is organized into six orthogonal layers, each fulfilling a single architectural responsibility:
 
 ```
-Webcam
-   │
-   ▼
-Video Capture (OpenCV)
-   │
-   ▼
-MediaPipe Processing (Face Mesh / Hand Tracking / Head Pose)
-   │
-   ▼
-Feature Extraction  ──────────────►  Calibration Profile (per user)
-   │                                          ▲
-   ▼                                          │
-Weighted Confidence Fusion  ◄─────────────────┘
-   │
-   ▼
-Adaptive Decision Engine ──► Action Prediction + Confidence
-   │
-   ▼
-Computer Action Execution
-   │
-   ▼
-Implicit Feedback Detector (undo / repeat / accept)
-   │
-   ▼
-Online Weight Update ──► back into Calibration Profile
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                           THE SIX PRINCIPLED ARCHITECTURAL LAYERS                                │
+├──────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                                  │
+│  [LAYER 1: PERCEPTION]      ──► Observes:     Extracts raw physical cues from webcam stream      │
+│  [LAYER 2: CALIBRATION]     ──► Personalizes: Bootstraps user anatomy, noise variances & tempo   │
+│  [LAYER 3: DECISION]        ──► Decides:      Fuses confidence, verifies safety & dispatches     │
+│  [LAYER 4: OBSERVATION]     ──► Evaluates:    Monitors post-action user behavior via implicit cues│
+│  [LAYER 5: ASSESSMENT]      ──► Validates:    Computes health metrics & gatekeeps updates        │
+│  [LAYER 6: LEARNING]        ──► Learns:       Executes micro/macro SGD, simplex & profile store  │
+│                                                                                                  │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                           CLOSED-LOOP ADAPTIVE FEEDBACK PIPELINE                                 │
+├──────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                                  │
+│           ┌─────────────────────────────────────────────────────────────┐                        │
+│           │                   LAYER 1: PERCEPTION                       │                        │
+│           │    (Webcam 30 FPS → FaceMesh/Iris + Hands + SolvePnP)       │                        │
+│           └──────────────────────────────┬──────────────────────────────┘                        │
+│                                          │ Feature Vector x                                      │
+│                                          ▼                                                       │
+│  ┌────────────────────────┐      ┌──────────────────────────────┐                                │
+│  │ VERSIONED PROFILE STORE│─────►│      LAYER 3: DECISION       │                                │
+│  │ (Profile v_k, ACI_t)   │      │ (3A Fusion → 3B Safety Reason│                                │
+│  └───────────▲────────────┘      │  → 3C OS Context Dispatch)   │                                │
+│              │                   └──────────────┬───────────────┘                                │
+│              │ Profile v_k+1                    │ Executed Action Context                        │
+│              │                                  ▼                                                │
+│  ┌───────────┴────────────┐      ┌──────────────────────────────┐                                │
+│  │    LAYER 6: LEARNING   │      │     LAYER 4: OBSERVATION     │                                │
+│  │ (Micro SGD + Macro     │      │ (Temporal Windowing State    │                                │
+│  │  Epoch State Machine)  │      │  Machine + 5 Sub-Detectors)  │                                │
+│  └───────────▲────────────┘      └──────────────┬───────────────┘                                │
+│              │ Validated Signal                 │ Observed Feedback Event                        │
+│              │ (APPROVE)                        ▼                                                │
+│              │                   ┌──────────────────────────────┐                                │
+│              └───────────────────│     LAYER 5: ASSESSMENT      │                                │
+│                                  │ (5A Metrics Engine +         │                                │
+│                                  │  5B Decision Validator)      │                                │
+│                                  └──────────────────────────────┘                                │
+│                                                                                                  │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 8. System Features
+## 5. Core Technical Innovations
 
-* Real-time webcam input, hand gesture detection, face landmark detection, gaze/head-pose estimation
-* Weighted multimodal confidence fusion (replacing boolean rules)
-* Calibration wizard for new users
-* Implicit feedback detection and online weight adaptation
-* Drift detection with recalibration prompts
-* Explainability HUD (per-modality confidence bars)
-* Live visualization of landmarks and predicted actions
+### 5.1 Interactive Calibration Wizard (Layer 2)
+An onboarding protocol (60–90 seconds, 10–15 sample interactions) bootstraps the initial profile (`Profile v1`):
+* **Neutral Posture 95% Confidence Ellipsoid**: Computes 3D head pose mean $\boldsymbol{\mu}_{\text{pose}}$ and inverted covariance $\boldsymbol{\Sigma}_{\text{pose}}^{-1}$ to establish a Mahalanobis neutral resting boundary.
+* **5-Point Ocular Gaze Affine Mapping**: Fits a 2D affine perspective matrix $\mathbf{M}_{\text{gaze}}$ mapping pupil ratio coordinates to screen coordinates.
+* **Kinematic & Tempo Profiling**: Measures user gesture velocity, wrist acceleration, and reaction latency to calibrate the user-specific decay constant $\tau_{\text{user}}$.
+* **Variance-Informed Weight Initialization**: Assigns initial modality weights inversely proportional to observed sensor noise variances ($\tilde{w}_i^{(0)} \propto 1/\sigma_i^2$), compensating for individual sensor limitations (e.g. lower gaze weight for users wearing thick glasses).
 
----
+### 5.2 Implicit Feedback Observer & Temporal State Machine (Layer 4)
+Replaces intrusive feedback prompts with an asynchronous temporal observer operating across four distinct timing windows:
+1. **Refractory Window ($[t_0, t_0 + 200\text{ms}]$)**: Filters out physiological motor inertia based on human visual-motor reaction time limits.
+2. **Active Correction Window ($[t_0 + 200\text{ms}, t_0 + 1.8\text{s}]$)**: Intercepts corrective user actions via five specialized sub-detectors:
+   * *Global OS Undo Hook*: Captures `Ctrl+Z`, `Alt+Left`, and `Ctrl+Shift+T` on matching target process IDs.
+   * *Directional Oppositional Reversals*: Detects immediate inverse continuous commands (e.g., Scroll Down $\to$ Scroll Up within 1.0s).
+   * *Rapid Duplicate Gesture Retries*: Detects repeated gesture attempts indicating a false rejection.
+   * *Immediate Window/Tab Dismissal*: Detects rapid closure of newly opened windows within 1.5s.
+   * *Physical Input Overrides*: Captures sudden mouse or keyboard intervention following an action.
+3. **Stability Expiration Window ($t > t_0 + 1.8\text{s}$)**: Emits implicit positive acceptance ($c_{fb} = 1.0, y_{\text{target}} = 1.0$) when an action persists without reversal.
+4. **Continuous Feedback Confidence Decay**:
+   $$c_{fb}(\Delta t) = \begin{cases} \exp\left(-\frac{\Delta t - 0.20}{\tau_{\text{user}}}\right) & \text{for negative corrections with } \Delta t \in [0.2\text{s}, 1.8\text{s}] \\ 1.0 & \text{for positive acceptance after } 1.8\text{s} \\ 0.0 & \text{for neutral / ambiguous states} \end{cases}$$
 
-## 9. Technologies
+### 5.3 Global Uncertainty & Confidence Propagation Pipeline
+Unifies perceptual, decision, supervisory, and historical calibration metrics into an integrated confidence model:
+$$C_{\text{update}} = \left(\frac{1}{1 + \sigma_{\text{perceptual}}}\right) \cdot g_{\text{weight}}(\Delta_{\text{decision}}) \cdot c_{fb}(\Delta t) \cdot (1 - \text{ECE}_t) \cdot ACI_t$$
+where $C_{\text{update}}$ directly modulates the effective stochastic gradient descent step size ($\eta_{\text{eff}} = \eta_0 \cdot C_{\text{update}}$).
 
-| Category | Technology |
-|---|---|
-| Programming Language | Python |
-| Computer Vision | OpenCV |
-| Landmark Detection | MediaPipe |
-| Numerical Processing | NumPy |
-| Lightweight Online Learning | scikit-learn (`partial_fit`) or River (streaming ML) |
-| Automation | PyAutoGUI |
-| Local Profile Storage | SQLite / JSON |
-| GUI / HUD | Tkinter or PyQt5 |
-| Development Environment | VS Code |
-| Version Control | Git & GitHub |
+### 5.4 Dual-Scale Adaptation Engine (Layer 6)
+* **Micro Adaptation (Per-Interaction SGD, $<1\text{ms}$)**: Immediately updates weights $\mathbf{w}_a$ and thresholds $\theta_a$ using ambiguity-gated gradients and exact 1D bisection box-constrained simplex projection ($w_{a, i} \in [0.05, 0.85], \sum w_{a, i} = 1.0$).
+* **Macro Adaptation (Periodic Epochs, Every $N=30\text{--}50$ Interactions)**: Re-estimates running Gaussian score distributions ($\mu_S, \sigma_S$), recalculates Expected Calibration Error ($ECE$), evaluates Wald Sequential Probability Ratio Tests (SPRT) for drift detection, executes macro policies (`MERGE`, `FREEZE`, `DISCARD`, `RECALIBRATE`), and persists immutable `ProfileSnapshot` records.
 
----
-
-## 10. Hardware & Software Requirements
-
-Unchanged from v1: standard webcam, 8 GB RAM, Windows/Linux/macOS, Python 3.11+, no specialized sensors.
-
----
-
-## 11. Expected Outcomes
-
-* A multimodal interaction system whose false-activation/false-rejection rate measurably decreases over a session as the engine personalizes.
-* A working calibration + feedback loop, not just a fusion demo.
-* A quantitative comparison (adaptive vs. static-rule baseline) on the same task set.
-* An explainability HUD that makes the personalization visible and debuggable.
+### 5.5 Runtime Assessment Engine & Intelligent Gatekeeper (Layer 5)
+* **Categorized Health Metrics**: Tracks EWMA Adaptation Gain ($AG_t$, $\alpha=0.10$), Sliding Learning Velocity ($LV_t$), Weight Stability Index ($WSI_t$), Adaptation Confidence Index ($ACI_t$), Expected Calibration Error ($ECE_t$), Recovery Rate ($RR$), and Drift Recovery Time ($DRT$).
+* **Intelligent Gatekeeper**: Firewalls the learning engine by evaluating sample count floors ($k \ge 3$), confidence floors ($c_{fb} \ge 0.40$), macro drift lockouts ($S_m \ge 2.89$), contradiction resolution, and sensor signal-to-noise ratios, emitting strict `APPROVE` vs. `REJECT` verdicts.
 
 ---
 
-## 12. Applications
+## 6. Real-World Applications & Impact
 
-> The common thread across all applications: **static thresholds assume a "standard user" that doesn't exist**. The adaptive engine turns user diversity from a failure mode into a design feature.
-
-### 12.1 Assistive Technology for Users with Motor or Sensory Impairments
-
-**The problem it solves:** Users with atypical gesture ranges, involuntary tremors, limited head mobility, or non-standard gaze patterns are *exactly* the population for whom fixed thresholds fail hardest. A static system tuned on able-bodied testers either rejects their valid input (too strict) or misfires on involuntary movement (too loose).
-
-**How the adaptive system serves them:**
-- The calibration wizard captures the individual's actual range of motion and gesture envelope — not a population average.
-- The implicit feedback loop continuously adjusts to the user's evolving motor patterns (e.g., fatigue progression throughout the day, gradual improvement during rehabilitation).
-- The drift detector catches degradation caused by progressive conditions, prompting recalibration before the user experiences frustration.
-
-**Concrete scenario:** A user with cerebral palsy has a limited pinch range and involuntary head tilts. After a 60-second calibration, the system learns that *their* "pinch" is a smaller aperture change and *their* neutral head pose is offset. Over the session, it further tightens these boundaries as it observes what triggers intended vs. unintended actions.
-
-### 12.2 Touchless Interaction in Hygiene-Sensitive or Sterile Environments
-
-**The problem it solves:** In surgical theatres, laboratories, clean rooms, and food processing facilities, touching shared input devices is either prohibited or undesirable. Gesture/gaze interfaces exist, but a fixed-threshold system forces every user (surgeon, nurse, technician) to conform to the same interaction style — causing misfires during time-critical procedures.
-
-**How the adaptive system serves them:**
-- Each staff member gets a personal profile that loads on identification (or a quick recalibration at shift start).
-- The system tolerates the surgeon's quick, precise gestures differently from the nurse's broader movements — without manual threshold tuning by an admin.
-- The explainability HUD provides immediate visual confirmation of why an action fired, critical in environments where an accidental input could have serious consequences.
-
-### 12.3 Personalized Smart Workstations (Productivity / Knowledge Work)
-
-**The problem it solves:** Office workers, developers, and designers sit at varying distances, use different monitor setups, wear glasses intermittently, and have personal habits (e.g., leaning back while reading vs. leaning forward while typing). A static gaze or gesture threshold tuned for one posture misfires when the user shifts context.
-
-**How the adaptive system serves them:**
-- Per-user weight adaptation learns that *this* user's "looking at a window to select it" involves a wider gaze angle (large monitor) while *that* user's involves a narrower one (laptop).
-- Drift detection catches environmental changes — a user moves to a standing desk, puts on reading glasses, or the afternoon sun shifts the lighting. The system flags recalibration rather than silently degrading.
-- Context profiles (future enhancement) could auto-switch thresholds between "coding" and "presenting" modes.
-
-**Concrete scenario:** A developer uses gaze-to-focus + pinch-to-confirm to switch between IDE tabs hands-free while their hands stay on the keyboard. After 15 minutes, the system has learned their specific gaze dwell time and pinch speed, reducing accidental tab-switches from the static baseline.
-
-### 12.4 Public Kiosks and Shared-Terminal Interfaces
-
-**The problem it solves:** Public kiosks (information desks, museum exhibits, retail self-service) face the worst-case scenario for static thresholds: *every user is different*, and there is no opportunity for a long calibration session. A child, an elderly visitor, and a tall adult all interact with different gaze angles, gesture speeds, and reach envelopes.
-
-**How the adaptive system serves them:**
-- The short calibration wizard (60–90 seconds, framed as an engaging onboarding interaction) bootstraps a usable profile even for one-time users.
-- The implicit feedback loop begins improving accuracy *within the same session* — even a 5-minute kiosk visit benefits from the first few corrective signals.
-- The system resets to a conservative default between users, ensuring no cross-contamination of profiles.
-
-### 12.5 Industrial Human–Machine Interfaces (HMI)
-
-**The problem it solves:** Factory operators, warehouse workers, and control-room technicians interact with machinery while wearing PPE (gloves, helmets, safety glasses), which degrades gesture recognition and gaze estimation. Shift workers have different body types and fatigue patterns. A static system calibrated during commissioning becomes progressively worse as real operators replace lab testers.
-
-**How the adaptive system serves them:**
-- Per-operator profiles accommodate differences in hand size (with/without gloves), head-pose offset (helmet), and gaze angle (safety glasses).
-- The feedback loop compensates for fatigue-related drift within a shift — slower gestures, less precise gaze — without requiring the operator to stop work.
-- Drift detection serves as an indirect fatigue indicator: rising correction rates could trigger a safety alert.
-
-### 12.6 Interactive Presentations and Collaborative Displays
-
-**The problem it solves:** Presenters use gestures and gaze to control slides, annotate content, and navigate media during talks. Each presenter has a different speaking style — some gesture broadly, others minimally; some pace, others stand still. A fixed system either captures too many false gestures (distracting during a live talk) or misses intentional commands.
-
-**How the adaptive system serves them:**
-- A quick pre-talk calibration (framed as a "mic check" equivalent) establishes the presenter's gesture baseline.
-- During the talk, the implicit feedback loop learns from corrections (e.g., presenter goes back a slide immediately = the advance was unintended).
-- The explainability HUD (in a discreet presenter-view mode) shows confidence levels, helping the presenter understand and adjust their own interaction style in real time.
-
-### Application Summary
-
-| Application Domain | Primary User Variability | Key Adaptive Feature Used |
+| Application Domain | Primary User Variability | Core Adaptive Mechanism Applied |
 |---|---|---|
-| Assistive Technology | Motor/sensory range, involuntary movement | Calibration wizard + continuous adaptation + drift detection |
-| Sterile Environments | Per-staff gesture style, time-critical accuracy | Per-user profiles + explainability HUD |
-| Smart Workstations | Posture, distance, glasses, lighting changes | Weight adaptation + drift detection |
-| Public Kiosks | Every user is different, short sessions | Fast calibration + rapid implicit learning |
-| Industrial HMI | PPE, fatigue, shift rotation | Per-operator profiles + fatigue-correlated drift |
-| Presentations | Speaking/gesture style varies per presenter | Pre-talk calibration + real-time feedback |
+| **Assistive Technology** | Atypical motor envelopes, tremor, muscle fatigue | Calibration wizard + continuous micro-adaptation + drift recalibration |
+| **Sterile / Touchless Environments** | Personal gesture syntax, critical precision | Tier-2 safety confirmation gate + per-user versioned profiles |
+| **Smart Workstations** | Posture drift, seating distance, lighting variations | Weight adaptation + macro drift detection + explainability HUD |
+| **Public Kiosks / Shared Terminals** | Diverse uncalibrated users, short interaction spans | Fast 60s bootstrapping + rapid within-session implicit tuning |
+| **Industrial / Safety HMIs** | Personal protective equipment (gloves, helmets, glasses) | Variance-informed weight initialization + fatigue-correlated drift alerts |
 
 ---
 
-## 13. Evaluation Plan (v2.3)
+## 7. Empirical Evaluation & Scientific Validation Plan
 
-* **Core Deliverable (D5 Pilot)**: Within-subjects counterbalanced A/B design ($N = 4\text{--}6$) across isomorphic task scripts with a 5-minute washout period (Cohort 1: Static $\to$ Adaptive; Cohort 2: Adaptive $\to$ Static) to eliminate practice effect confounds.
-* **Evaluation Metrics**: False Activation Rate (FAR), False Rejection Rate (FRR), Task Completion Time (TCT), and Correction Rate across session epochs.
-* **Statistical Analysis**: Paired Wilcoxon signed-rank test ($\alpha = 0.05$) to validate significant error reduction.
-* **Stretch Research Goal (E3)**: Expanded $N=12\text{--}16$ Latin Square study with NASA-TLX workload, SUS surveys, and Linear Mixed-Effects modeling ($\text{Metric} \sim \text{Condition} + \text{Order} + \text{Condition} \times \text{Order} + (1|\text{Subject})$).
-* **Success Criterion**: Statistically significant reduction in correction rate in the adaptive condition over static baseline, with downward learning curves across epochs.
+To rigorously evaluate the framework against standard scientific benchmarks, a five-stage empirical validation protocol will be executed:
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                 5-STAGE SCIENTIFIC VALIDATION PIPELINE                 │
+├────────────────────────────────────────────────────────────────────────┤
+│  Stage 1: Developer Verification & Invariant Testing                   │
+│  • Simplex bounds (∑w_i=1, w_i∈[0.05, 0.85]), Wald SPRT renewal       │
+│  • RAE module decoupling & Gatekeeper APPROVE/REJECT unit tests        │
+├────────────────────────────────────────────────────────────────────────┤
+│  Stage 2: Counterbalanced Pilot Evaluation (N = 4–6 Participants)      │
+│  • Within-subjects A/B protocol across isomorphic task scripts         │
+│  • 5-min washout period between Static Baseline and Adaptive Engine    │
+├────────────────────────────────────────────────────────────────────────┤
+│  Stage 3: Objective Telemetry & Adaptation Metrics Extraction          │
+│  • Extract FAR, FRR, TCT, AG, RR, WSI, ECE, ACI from RAE telemetry    │
+│  • Segment session into 5 epochs to verify learning curves             │
+├────────────────────────────────────────────────────────────────────────┤
+│  Stage 4: Subjective UX & Workload Profiling                           │
+│  • Administer SUS, Raw NASA-TLX, and 7-item Adaptation Scale           │
+├────────────────────────────────────────────────────────────────────────┤
+│  Stage 5: Statistical Significance & Comparative Modeling              │
+│  • Paired Wilcoxon Signed-Rank Tests (Static vs Adaptive)              │
+│  • Optional: Linear Mixed-Effects Model isolating Condition×Order      │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+### Standardized Evaluation Instruments
+1. **Objective Telemetry**: False Activation Rate (FAR), False Rejection Rate (FRR), Task Completion Time (TCT), Adaptation Gain ($AG$), Expected Calibration Error ($ECE$), and Learning Velocity ($LV$).
+2. **Standardized Usability**: System Usability Scale (SUS, 0–100 score).
+3. **Cognitive Workload**: Raw NASA-TLX (Mental, Physical, Temporal, Performance, Effort, Frustration).
+4. **Adaptation-Specific Likert Instrument**: 7-item scale evaluating perceived adaptability, predictability, recovery fluency, and visual transparency.
 
 ---
 
-## 14. Future Enhancements
+## 8. Technical Stack & Execution Constraints
 
-* Multi-user profile switching on shared devices
-* Context-mode profiles (e.g., "coding" vs. "media" thresholds) learned automatically from active application
-* Swap the linear/perceptron fusion for a small neural fusion model once enough session data exists
-* Voice command as a fourth modality
-* On-device acceleration (e.g., a small edge accelerator) if moved to embedded hardware
-
----
-
-## 15. Deliverables
-
-* Functional adaptive multimodal HCI prototype
-* Source code repository
-* System architecture documentation (see companion architecture doc)
-* Baseline-vs-adaptive evaluation results
-* Demonstration video
-* Final project report and presentation slides
+* **Programming Language**: Python 3.11+
+* **Computer Vision & Landmark Tracking**: OpenCV, MediaPipe (FaceMesh with Iris, Hands)
+* **Numerical & Optimization Engine**: NumPy, SciPy (Custom 1D Bisection Simplex Projection)
+* **OS Automation & Hooking**: PyAutoGUI, Windows Native Hook API (`SetWindowsHookEx` / `pynput`)
+* **State-Aware Explainability Overlay**: PyQt6 / OpenGL HUD Overlay
+* **Telemetry & Profile Store**: SQLite, JSON (Immutable `ProfileSnapshot` repository)
+* **Hardware Target**: Standard consumer hardware (Standard 720p/1080p webcam, 8 GB RAM, CPU-only execution $<33\text{ms}/\text{frame}$, no GPU required).
 
 ---
 
-## 16. Conclusion
+## 9. Conclusion
 
-Combining eye focus, head pose, and hand gesture is no longer a novel idea on its own — the fusion logic is. Making that fusion **adapt to the individual user through implicit feedback**, rather than relying on fixed thresholds, is what turns this from "another MediaPipe demo" into a system that gets measurably better the more a specific person uses it, while staying small enough to build and evaluate in a single semester.
+By shifting the core research focus from raw feature extraction to a **self-evaluating adaptive decision architecture**, this framework directly resolves the primary limitation of multimodal interaction: the failure of static thresholds across diverse human populations. Through variance-informed calibration, continuous implicit feedback observation, global uncertainty modeling, and dual-scale micro/macro adaptation, the system delivers an intelligent, non-intrusive, and mathematically defensible HCI platform capable of personalizing itself seamlessly during natural desktop use.

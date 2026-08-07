@@ -1,183 +1,151 @@
-# Adaptive Context-Aware Multimodal HCI System
+# Self-Evaluating Adaptive Multimodal Decision Architecture for Human-Computer Interaction
 
-> A real-time, personalized Human-Computer Interaction (HCI) framework combining eye focus, head pose orientation, and hand gesture tracking with lightweight online adaptation.
+> A real-time, non-intrusive Human-Computer Interaction (HCI) framework that personalizes multimodal decision policies (ocular gaze, head pose, hand gesture) via continuous implicit behavioral feedback and autonomous runtime self-evaluation.
 
 ---
 
 ## 1. Executive Summary
 
-Traditional vision-based Multimodal Human-Computer Interaction (HCI) systems rely heavily on static, hand-tuned rules (e.g., fixed IF-THEN combinations of gaze and gesture). However, static thresholds fail to account for variance across users—such as differences in eye shape, gesture speed, seating posture, or lighting.
+Traditional vision-based Multimodal Human-Computer Interaction (HCI) systems rely heavily on static, hand-tuned rules (e.g., fixed IF-THEN combinations of gaze and gesture). However, static thresholds fail to account for variance across users—such as differences in eye shape, corrective eyewear, gesture speed, seating posture, or ambient lighting.
 
-This project introduces an **Adaptive Context-Aware Multimodal HCI System**. Operating entirely on standard consumer CPU hardware via a single webcam, the system replaces static boolean rules with a **weighted confidence fusion engine** that personalizes decision boundaries and confidence weightings per user through a fast initial calibration wizard (60--90 s) and continuous online learning from implicit interaction feedback (e.g., undo actions and rapid repeats).
+This project introduces a **Self-Evaluating Adaptive Multimodal Decision Architecture**. Operating entirely on standard consumer CPU hardware via a single webcam, the system replaces static boolean rules with a **decoupled confidence fusion and safety reasoning engine** that personalizes decision boundaries and modality confidence weights per user through a fast initial calibration wizard (60–90 s) and continuous online learning from implicit interaction feedback (e.g., OS undos, directional reversals, and rapid retries), governed by a dedicated **Runtime Assessment Engine (RAE)**.
 
 ---
 
 ## 2. Complete Project Documentation Suite
 
-The repository features a complete, 4-tier engineering documentation package:
-
 ```
                   ┌────────────────────────────────────────────────────────┐
-                  │ Project Proposal (v2)                                  │
+                  │ Project Proposal                                       │
                   │ adaptive-multimodal-hci-proposal.md                    │
                   └───────────────────────────┬────────────────────────────┘
-                                              │ Motivation & Objectives
+                                              │ Research Vision & Motivation
                                               ▼
                   ┌────────────────────────────────────────────────────────┐
                   │ Project Implementation Plan                            │
                   │ adaptive-multimodal-hci-implementation-plan.md         │
                   └───────────────────────────┬────────────────────────────┘
-                                              │ Implementation & Roadmap
+                                              │ Execution Roadmap & Verification
                                               ▼
                   ┌────────────────────────────────────────────────────────┐
                   │ System Architecture Specification                      │
                   │ adaptive-multimodal-hci-architecture.md                │
                   └───────────────────────────┬────────────────────────────┘
-                                              │ Technical System Design
+                                              │ Six-Layer Technical Design
                                               ▼
                   ┌────────────────────────────────────────────────────────┐
-                  │ Codebase & Evaluation Benchmarks                       │
+                  │ Codebase & Empirical Benchmarks                        │
                   │ src/, tests/, profiles/, logs/                         │
                   └────────────────────────────────────────────────────────┘
 ```
 
-1. **[Project Proposal (v2)](file:///d:/HCI/adaptive-multimodal-hci-proposal.md)**  
-   Explains the project vision, problem statement, research scope, baseline comparison methodology, and overall target outcomes.
-2. **[Project Implementation Plan](file:///d:/HCI/adaptive-multimodal-hci-implementation-plan.md)**  
-   Execution-focused engineering plan covering deliverables (D1–D5), stretch enhancements (E1–E3), deliverable traceability matrix, milestone completion criteria, and verification strategy.
-3. **[System Architecture Specification](file:///d:/HCI/adaptive-multimodal-hci-architecture.md)**  
-   Deep technical specification detailing component diagrams, frame data flow, API contracts, CalibrationProfile data schema, threading models, and trade-off analyses.
+1. **[Project Proposal](file:///d:/HCI/adaptive-multimodal-hci-proposal.md)**: Research thesis, formal research questions (RQ1–RQ4), theoretical motivation, real-world application domains, and 5-stage empirical validation protocol.
+2. **[System Architecture Specification](file:///d:/HCI/adaptive-multimodal-hci-architecture.md)**: Exhaustive 6-layer design, decision lifecycle sequence diagram, decoupled Layer 3 sub-stages, global uncertainty propagation model, dual-engine Runtime Assessment Engine, dual-scale micro/macro adaptation, and profile schemas.
+3. **[Project Implementation Plan](file:///d:/HCI/adaptive-multimodal-hci-implementation-plan.md)**: 4-week execution roadmap, D1–D5 and E1–E3 deliverables, automated test suite, counterbalanced A/B pilot study protocol, and risk mitigation strategies.
+4. **[Proposed Technical Innovations](file:///d:/HCI/Proposed_Innovations.md)**: Deep dive into the core scientific contributions, comparison tables, and mathematical foundations.
 
 ---
 
-## 3. Core Subsystems
+## 3. The Six Principled Architectural Layers
 
-* **Multimodal Perception Layer**: Ingests video at 30+ FPS, extracting 3D head pose angles (solvePnP), eye gaze offsets, and hand gestures (MediaPipe Face Mesh & Hand Tracking) with temporal smoothing filters.
-* **Weighted Confidence Decision Engine**: Converts modality features into normalized confidence scores (0.0--1.0) and fuses them using dynamic per-user weights. Includes a static rule-based baseline engine for control comparisons.
-* **Calibration & User Profile Layer**: Provides a 60–90 second calibration wizard to bootstrap initial per-user gaze, posture, and gesture baselines, persisting parameters to disk (JSON/SQLite).
-* **Adaptive Online Learning Engine (Stretch Goal)**: Nudges per-modality weights and activation thresholds in real time using a lightweight perceptron update rule driven by implicit user feedback.
-* **System Interaction & Explainability Layer**: Dispatches OS desktop commands (PyAutoGUI), monitors implicit correction feedback (Ctrl+Z undo & rapid gesture repeats), and renders a live explainability HUD overlay.
-* **Evaluation & Benchmarking Layer**: Logs interaction telemetry, runs standardized task scripts, and generates statistical graphs comparing baseline static rules vs. adaptive personalization.
-
----
-
-## 4. Implementation Roadmap (Deliverables & Enhancements)
-
-Development is structured into five Core Deliverables (Must Have) and three Stretch Enhancements (Optional Research Goals):
-
-### Core Deliverables (Must Have)
-* **[D1] Multimodal Perception Layer**: Real-time webcam frame acquisition, MediaPipe landmark extraction, and temporal feature buffer smoothing.
-* **[D2] Weighted Confidence Decision Engine**: Multimodal confidence calculation, weighted score fusion, and single-modality dropout recovery.
-* **[D3] Calibration & User Profile Layer**: Interactive setup wizard (60–90s) generating persistent user calibration profiles.
-* **[D4] System Interaction Layer**: PyAutoGUI OS action execution and implicit feedback detection (undo / repeat watcher).
-* **[D5] System Evaluation & Benchmarking Layer**: Automated telemetry logging, task script benchmarking, and final documentation packaging.
-
-### Stretch Enhancements (Optional Research Goals)
-* **[E1] Adaptive Online Learning Engine**: Real-time perceptron weight updates and continuous accuracy drift detection.
-* **[E2] Explainability HUD Overlay**: Visual overlay rendering live per-modality confidence bars over desktop applications.
-* **[E3] Advanced Statistical Benchmarking Suite**: Automated parsing of session logs and comparative error-curve plotting.
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                           THE SIX PRINCIPLED ARCHITECTURAL LAYERS                                │
+├──────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                                  │
+│  [LAYER 1: PERCEPTION]      ──► Observes:     Extracts raw physical cues from webcam stream      │
+│  [LAYER 2: CALIBRATION]     ──► Personalizes: Bootstraps user anatomy, noise variances & tempo   │
+│  [LAYER 3: DECISION]        ──► Decides:      Fuses confidence, verifies safety & dispatches     │
+│  [LAYER 4: OBSERVATION]     ──► Evaluates:    Monitors post-action user behavior via implicit cues│
+│  [LAYER 5: ASSESSMENT]      ──► Validates:    Computes health metrics & gatekeeps updates        │
+│  [LAYER 6: LEARNING]        ──► Learns:       Executes micro/macro SGD, simplex & profile store  │
+│                                                                                                  │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## 5. Repository Layout
+## 4. Key Technical Capabilities
+
+* **Variance-Informed Calibration Wizard (Layer 2)**: 60–90 second 5-phase onboarding protocol mapping 3D neutral posture ellipsoids $\mathcal{E}_{\text{head}}$, 5-point gaze affine transforms $\mathbf{M}_{\text{gaze}}$, personal reaction tempos $\tau_{\text{user}}$, and initializing noise-variance-weighted parameters (`Profile v1`).
+* **Decoupled Decision & Safety Engine (Layer 3)**: Decoupled Stage 3A (Confidence Fusion), Stage 3B (Post-Decision Safety Reasoning with user-relative Tier-2 gates and 600ms visual dwell confirmation), and Stage 3C (OS Execution & Context Dispatch).
+* **Asynchronous Implicit Feedback Observer (Layer 4)**: 4-window temporal state machine monitoring 5 negative sub-detectors (OS Undo, Directional Reversal, Rapid Retries, Window Dismissal, Physical Overrides) with continuous confidence decay $c_{fb}(\Delta t)$.
+* **Dual-Engine Runtime Assessment (Layer 5)**:
+  * *Engine 5A (Runtime Metrics)*: EWMA Adaptation Gain ($AG_t$), Learning Velocity ($LV_t$), Weight Stability Index ($WSI_t$), Adaptation Confidence Index ($ACI_t$), Expected Calibration Error ($ECE_t$), Recovery Rate ($RR$), and Drift Recovery Time ($DRT$).
+  * *Engine 5B (Intelligent Gatekeeper)*: Multi-criteria validation engine enforcing sample floors, confidence floors, macro drift lockouts, contradiction resolution, and sensor noise checks.
+* **Dual-Scale Online Adaptation (Layer 6)**: Micro-adaptation ($<1\text{ms}$ online SGD with 1D bisection box-constrained simplex projection) and macro-adaptation (periodic epoch re-estimation with `MERGE`, `FREEZE`, `DISCARD`, and `RECALIBRATE` policies, plus hierarchical Wald SPRT drift detection).
+* **State-Aware Explainability HUD & Dashboard**: Live desktop overlay displaying real-time confidence breakdowns, dwell confirmation rings, and active system health state badges (`LEARNING`, `IMPROVING`, `STABLE`, `DRIFTING`, `RECOVERING`).
+
+---
+
+## 5. Repository Directory Layout
 
 ```
 adaptive-multimodal-hci/
 ├── docs/
-│   ├── adaptive-multimodal-hci-proposal.md            # Project Proposal (v2)
-│   ├── adaptive-multimodal-hci-architecture.md        # System Architecture Specification
-│   └── adaptive-multimodal-hci-implementation-plan.md # Project Implementation Plan
+│   ├── adaptive-multimodal-hci-proposal.md            # Canonical Project Proposal
+│   ├── adaptive-multimodal-hci-architecture.md        # Technical System Architecture
+│   ├── adaptive-multimodal-hci-implementation-plan.md # Engineering Roadmap & Verification
+│   └── Proposed_Innovations.md                        # Technical Innovations Deep-Dive
 ├── src/
 │   ├── __init__.py
-│   ├── main.py                          # Application entry point & main loop
-│   ├── capture/                         # Frame acquisition & worker thread
+│   ├── main.py                          # Application entry point & pipeline coordinator
+│   ├── capture/                         # Threaded frame acquisition
 │   │   ├── __init__.py
-│   │   └── capture_thread.py
-│   ├── perception/                      # Landmark extraction & feature buffer
+│   │   └── video_stream.py
+│   ├── perception/                      # Layer 1: Landmark extraction & smoothing
 │   │   ├── __init__.py
-│   │   ├── face_tracker.py
-│   │   ├── hand_tracker.py
-│   │   ├── head_pose.py
-│   │   └── feature_buffer.py
-│   ├── decision/                        # Fusion engine & confidence scoring
+│   │   ├── face_mesh_extractor.py
+│   │   ├── hand_pose_extractor.py
+│   │   ├── head_pose_estimator.py
+│   │   └── holt_winters_filter.py
+│   ├── calibration/                     # Layer 2: Calibration wizard & profile bootstrap
 │   │   ├── __init__.py
-│   │   ├── static_baseline.py
-│   │   ├── confidence_calculators.py
-│   │   └── fusion_engine.py
-│   ├── adaptation/                      # Calibration & user profiles
+│   │   ├── wizard_controller.py
+│   │   └── profile_generator.py
+│   ├── decision/                        # Layer 3: Fusion, safety reasoning & dispatch
 │   │   ├── __init__.py
-│   │   ├── calibration_wizard.py
-│   │   ├── profile_store.py
-│   │   ├── online_updater.py            # (Stretch Goal E1)
-│   │   └── drift_detector.py            # (Stretch Goal E1)
-│   ├── interaction/                     # Desktop actions & feedback
+│   │   ├── confidence_fuser.py
+│   │   ├── safety_gatekeeper.py
+│   │   └── action_dispatcher.py
+│   ├── feedback/                        # Layer 4: Implicit feedback observation
 │   │   ├── __init__.py
-│   │   ├── action_executor.py
-│   │   ├── feedback_detector.py
-│   │   └── explainability_hud.py        # (Stretch Goal E2)
-│   └── evaluation/                      # Telemetry logging & benchmarking
+│   │   ├── temporal_state_machine.py
+│   │   └── sub_detectors.py
+│   ├── assessment/                      # Layer 5: Runtime Assessment Engine (RAE)
+│   │   ├── __init__.py
+│   │   ├── runtime_metrics_engine.py
+│   │   ├── learning_gatekeeper.py
+│   │   └── session_report_generator.py
+│   ├── learning/                        # Layer 6: Online SGD & macro adaptation
+│   │   ├── __init__.py
+│   │   ├── micro_sgd_optimizer.py
+│   │   ├── simplex_projector.py
+│   │   ├── macro_adaptation_engine.py
+│   │   └── wald_sprt_detector.py
+│   ├── storage/                         # Versioned ProfileSnapshot persistence
+│   │   ├── __init__.py
+│   │   └── profile_store.py
+│   └── ui/                              # State-aware HUD & research dashboard
 │       ├── __init__.py
-│       ├── logger.py
-│       ├── benchmark_runner.py
-│       └── eval_metrics.py              # (Stretch Goal E3)
-├── tests/                               # Automated unit & integration tests
-│   ├── test_perception.py
-│   ├── test_decision.py
-│   ├── test_adaptation.py
-│   └── test_interaction.py
-├── profiles/                            # Local storage for user calibration profiles
-│   └── default_user.json
-├── logs/                                # Telemetry logs from evaluation runs
-├── requirements.txt                     # Dependencies (OpenCV, MediaPipe, NumPy, etc.)
-└── README.md                            # Repository index & setup guide
+│       ├── explainability_hud.py
+│       └── research_dashboard.py
+├── tests/                               # Comprehensive automated test suite
+│   ├── test_simplex_projection.py
+│   ├── test_layer3_decoupling.py
+│   ├── test_feedback_state_machine.py
+│   ├── test_runtime_metrics_engine.py
+│   ├── test_learning_gatekeeper.py
+│   └── test_macro_adaptation.py
+└── profiles/                            # Local JSON/SQLite user profile repository
 ```
 
 ---
 
-## 6. System Requirements & Dependencies
+## 6. Verification & System Constraints
 
-### Hardware Requirements
-* **Standard Webcam**: 720p or 1080p resolution operating at 30+ FPS.
-* **Host Processor**: Standard Intel/AMD x86-64 or Apple Silicon ARM CPU (8 GB RAM minimum).
-* **GPU**: None required—all perception and online learning run efficiently on CPU.
-
-### Software Prerequisites
-* **Operating System**: Windows 10/11, macOS 12+, or Linux (Ubuntu 20.04+).
-* **Python**: Version 3.11 or higher.
-
-### Installation & Dependencies
-```bash
-# Clone repository
-git clone https://github.com/user/adaptive-multimodal-hci.git
-cd adaptive-multimodal-hci
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install required packages
-pip install -r requirements.txt
-```
-
----
-
-## 7. Quickstart Guide
-
-1. **Launch Calibration Wizard**:
-   ```bash
-   python -m src.adaptation.calibration_wizard
-   ```
-2. **Run System (Core Interaction Mode)**:
-   ```bash
-   python src/main.py --profile default_user.json
-   ```
-3. **Run System (Baseline Evaluation Mode)**:
-   ```bash
-   python src/main.py --mode baseline
-   ```
-
----
-
-## 8. License & Citation
-
-This project is developed as an advanced Human-Computer Interaction (HCI) capstone repository. All documentation and source code are open for academic and research reference.
+* **Platform Compatibility**: Windows 10/11, Linux, macOS
+* **Python Runtime**: Python 3.11+
+* **Dependencies**: OpenCV, MediaPipe, NumPy, SciPy, PyAutoGUI, PyQt6
+* **Hardware Targets**: Standard consumer CPU, $\ge 8\text{ GB}$ RAM, standard 720p/1080p USB webcam. No dedicated GPU required.
+* **Latency Guarantee**: Total end-to-end pipeline latency $< 30\text{ ms}$ ($\ge 30\text{ FPS}$ sustained throughput).

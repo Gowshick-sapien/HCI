@@ -43,9 +43,10 @@ This project introduces a **Self-Evaluating Adaptive Multimodal Decision Archite
 2. **[Software Requirements Specification (SRS)](file:///d:/HCI/adaptive-multimodal-hci-srs.md)**: ISO/IEC/IEEE 29148 compliant specification detailing functional requirements (FR-1.1 to FR-9.5), performance budgets ($<29.5\text{ms}$), safety/privacy constraints, and verification traceability matrices.
 3. **[Project Deliverables Specification](file:///d:/HCI/adaptive-multimodal-hci-deliverables.md)**: Exhaustive breakdown of Core Deliverables (D1–D5), Advanced Enhancements (E1–E3), data contracts, mathematical formulations, and acceptance criteria.
 4. **[Base Repository Structure Specification](file:///d:/HCI/adaptive-multimodal-hci-repo-structure.md)**: Definitive codebase directory tree, package/module responsibilities, dependency management, and automated test suite architecture.
-5. **[System Architecture Specification](file:///d:/HCI/adaptive-multimodal-hci-architecture.md)**: Exhaustive 6-layer design, decision lifecycle sequence diagram, decoupled Layer 3 sub-stages, global uncertainty propagation model, dual-engine Runtime Assessment Engine, dual-scale micro/macro adaptation, and profile schemas.
-6. **[Project Implementation Plan](file:///d:/HCI/adaptive-multimodal-hci-implementation-plan.md)**: 4-week execution roadmap, D1–D5 and E1–E3 deliverables, automated test suite, counterbalanced A/B pilot study protocol, and risk mitigation strategies.
-7. **[Proposed Technical Innovations](file:///d:/HCI/Proposed_Innovations.md)**: Deep dive into the core scientific contributions, comparison tables, and mathematical foundations.
+5. **[Spiral SDLC Methodology Specification](file:///d:/HCI/adaptive-multimodal-hci-sdlc-spiral.md)**: Risk-driven 7-spiral development lifecycle mapping Boehm's 4-quadrant framework to the 6-layer architecture and verification gates.
+6. **[System Architecture Specification](file:///d:/HCI/adaptive-multimodal-hci-architecture.md)**: Exhaustive 6-layer design, decision lifecycle sequence diagram, decoupled Layer 3 sub-stages, global uncertainty propagation model, dual-engine Runtime Assessment Engine, dual-scale micro/macro adaptation, and profile schemas.
+7. **[Project Implementation Plan](file:///d:/HCI/adaptive-multimodal-hci-implementation-plan.md)**: 4-week execution roadmap, D1–D5 and E1–E3 deliverables, automated test suite, counterbalanced A/B pilot study protocol, and risk mitigation strategies.
+8. **[Proposed Technical Innovations](file:///d:/HCI/Proposed_Innovations.md)**: Deep dive into the core scientific contributions, comparison tables, and mathematical foundations.
 
 ---
 

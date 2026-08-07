@@ -236,11 +236,13 @@ Unchanged from v1: standard webcam, 8 GB RAM, Windows/Linux/macOS, Python 3.11+,
 
 ---
 
-## 13. Evaluation Plan (New)
+## 13. Evaluation Plan (v2.3)
 
-* Baseline run: static-rule engine (v1 logic) on a fixed task script (open app, scroll, play/pause, switch window) — log false positives/negatives.
-* Adaptive run: same task script and same users, adaptive engine active — log the same metrics over the session and plot correction rate over time.
-* Success criterion: correction rate trends downward within a session and is lower than the static baseline by a defined margin.
+* **Core Deliverable (D5 Pilot)**: Within-subjects counterbalanced A/B design ($N = 4\text{--}6$) across isomorphic task scripts with a 5-minute washout period (Cohort 1: Static $\to$ Adaptive; Cohort 2: Adaptive $\to$ Static) to eliminate practice effect confounds.
+* **Evaluation Metrics**: False Activation Rate (FAR), False Rejection Rate (FRR), Task Completion Time (TCT), and Correction Rate across session epochs.
+* **Statistical Analysis**: Paired Wilcoxon signed-rank test ($\alpha = 0.05$) to validate significant error reduction.
+* **Stretch Research Goal (E3)**: Expanded $N=12\text{--}16$ Latin Square study with NASA-TLX workload, SUS surveys, and Linear Mixed-Effects modeling ($\text{Metric} \sim \text{Condition} + \text{Order} + \text{Condition} \times \text{Order} + (1|\text{Subject})$).
+* **Success Criterion**: Statistically significant reduction in correction rate in the adaptive condition over static baseline, with downward learning curves across epochs.
 
 ---
 

@@ -420,3 +420,15 @@ class ProfileSnapshot:
 | Layer 5 Runtime Assessment (Metrics + Gate) | $< 1.5\text{ ms}$ | Vectorized sliding window variance and EWMA filter |
 | Layer 6 SGD Update + Simplex Projection | $< 1.0\text{ ms}$ | Exact 1D dual bisection root finding ($<15$ iterations) |
 | **Total End-to-End Latency** | **$< 29.5\text{ ms}$** | **Guarantees seamless 30 FPS real-time operation on CPU** |
+
+---
+
+## 13. Related Canonical Documentation & Spiral SDLC Lifecycle
+
+This Architecture Specification interfaces directly with the master documentation and engineering lifecycle suite:
+* **[Project Proposal](file:///d:/HCI/adaptive-multimodal-hci-proposal.md)**: Scientific motivation, RQ1–RQ4 framing, and academic contributions.
+* **[ISO/IEC/IEEE 29148 SRS](file:///d:/HCI/adaptive-multimodal-hci-srs.md)**: Formal requirements specification and invariant acceptance criteria.
+* **[Project Deliverables Specification](file:///d:/HCI/adaptive-multimodal-hci-deliverables.md)**: Detailed specifications for deliverables D1–D5, E1–E3, and DOC1–DOC5.
+* **[Spiral SDLC Methodology Specification](file:///d:/HCI/adaptive-multimodal-hci-sdlc-spiral.md)**: Risk-driven 7-spiral development model mapping the 6 layers to iterative verification cycles.
+* **[Base Repository Structure Specification](file:///d:/HCI/adaptive-multimodal-hci-repo-structure.md)**: Complete directory structure and module layout.
+* **[Project Implementation Plan](file:///d:/HCI/adaptive-multimodal-hci-implementation-plan.md)**: 4-week execution roadmap and empirical protocols.

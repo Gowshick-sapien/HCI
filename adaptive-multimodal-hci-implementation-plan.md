@@ -33,32 +33,34 @@ To engineer, validate, and benchmark a real-time, non-intrusive Human-Computer I
 
 ---
 
-## 3. Four-Week Execution Roadmap
+## 3. Four-Week Execution Roadmap Mapped to the Spiral SDLC
+
+The 4-week engineering execution roadmap aligns directly with the **Seven Iterative Research Spirals** defined in the **[Spiral SDLC Methodology Specification (`adaptive-multimodal-hci-sdlc-spiral.md`)](file:///d:/HCI/adaptive-multimodal-hci-sdlc-spiral.md)**:
 
 ```
-┌────────────────────────────────────────────────────────────────────────┐
-│                        4-WEEK EXECUTION ROADMAP                        │
-├────────────────────────────────────────────────────────────────────────┤
-│  WEEK 1: Core Perception, Mathematical Decision Engine & Telemetry     │
-│  • Days 1–2: Threaded video pipeline, MediaPipe landmarks, Holt-Winters│
-│  • Days 3–4: Weighted fusion engine, 1D bisection simplex solver       │
-│  • Days 5–7: Telemetry logger, ActionContext schema, unit test suite   │
-├────────────────────────────────────────────────────────────────────────┤
-│  WEEK 2: Calibration, Safety Dispatcher & Runtime Assessment Engine    │
-│  • Days 8–10: 5-Phase calibration wizard & variance-informed weights   │
-│  • Days 11–12: Asynchronous implicit feedback observer (5 detectors)   │
-│  • Days 13–14: Layer 5 dual engines (Metrics + Intelligent Gatekeeper) │
-├────────────────────────────────────────────────────────────────────────┤
-│  WEEK 3: Dual-Scale Adaptive Engine & Core Pilot Benchmark             │
-│  • Days 15–17: Micro SGD + Macro epoch state machine + Wald SPRT       │
-│  • Days 18–19: Automated Session Report generator & convergence plots  │
-│  • Days 20–21: Within-subjects counterbalanced A/B pilot study (N=4–6) │
-├────────────────────────────────────────────────────────────────────────┤
-│  WEEK 4: Explainability HUD, Dashboard & Research Packaging            │
-│  • Days 22–24: State-aware HUD overlay (PyQt6/OpenGL) & Dashboard      │
-│  • Days 25–26: Statistical modeling (Wilcoxon Signed-Rank + Mixed LME)│
-│  • Days 27–28: Academic paper formatting, demo video, final release    │
-└────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                   4-WEEK EXECUTION ROADMAP MAPPED TO THE 7 RESEARCH SPIRALS                            │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│  WEEK 1: Perception Core & Mathematical Decision Engine (Spirals 1, 2, 3)                              │
+│  • Spiral 1 (Completed): Research vision, SRS, Architecture, Deliverables, and Repo Structure.         │
+│  • Spiral 2 (Days 1–3): Threaded webcam video pipeline, MediaPipe FaceMesh/Iris + Hands, Holt-Winters. │
+│  • Spiral 3 (Days 4–7): Weighted fusion engine, exact 1D bisection simplex solver, baseline engine.   │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│  WEEK 2: Calibration, Safety Dispatcher & Runtime Assessment Engine (Spirals 3, 4, 5)                  │
+│  • Spiral 3 (Days 8–9): 5-Phase calibration wizard & variance-informed profile synthesis (`Profile v1`)│
+│  • Spiral 4 (Days 10–12): Layer 3B Tier-2 safety gate & Layer 4 4-window feedback observer (5 detectors)│
+│  • Spiral 5 (Days 13–14): Layer 5 dual engines (5A Metrics Engine + 5B 6-Rule Gatekeeper Firewall).    │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│  WEEK 3: Dual-Scale Adaptive Engine & Empirical Pilot Benchmark (Spirals 6, 7)                         │
+│  • Spiral 6 (Days 15–17): Micro SGD + Macro epoch state machine (`MERGE`/`FREEZE`) + Wald SPRT detector│
+│  • Spiral 5 (Days 18–19): Automated Session Diagnostic Report generator & matplotlib convergence charts│
+│  • Spiral 7 (Days 20–21): Within-subjects counterbalanced A/B pilot study execution (N=4–6).          │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│  WEEK 4: Explainability HUD, Dashboard & Academic Dissemination (Spiral 7)                             │
+│  • Spiral 7 (Days 22–24): Low-overhead Explainability HUD overlay (PyQt6) & Research Dashboard (E2, E3)│
+│  • Spiral 7 (Days 25–26): Statistical modeling (Wilcoxon Signed-Rank + Linear Mixed-Effects Models).   │
+│  • Spiral 7 (Days 27–28): Academic conference paper preprint compilation (`paper/main.pdf`), DOC5.    │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---

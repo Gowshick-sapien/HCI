@@ -69,8 +69,9 @@ adaptive-multimodal-hci/
 │   ├── adaptive-multimodal-hci-srs.md                 # ISO/IEC/IEEE 29148 SRS (DOC2)
 │   ├── adaptive-multimodal-hci-deliverables.md        # Master Deliverables Specification
 │   ├── adaptive-multimodal-hci-architecture.md        # Technical System Architecture (DOC3)
-│   ├── adaptive-multimodal-hci-implementation-plan.md # 4-Week Engineering Roadmap (DOC4)
 │   ├── adaptive-multimodal-hci-repo-structure.md      # Repository Architecture (This Document)
+│   ├── adaptive-multimodal-hci-sdlc-spiral.md         # Spiral SDLC Methodology Specification
+│   ├── adaptive-multimodal-hci-implementation-plan.md # 4-Week Engineering Roadmap (DOC4)
 │   ├── Proposed_Innovations.md                        # Technical Innovations Deep-Dive
 │   ├── api/                                           # Subsystem API Reference Manuals
 │   │   ├── perception_api.md
@@ -285,6 +286,8 @@ The documentation suite is structured into four specialized tiers covering acade
 * **`adaptive-multimodal-hci-srs.md` (DOC2)**: ISO/IEC/IEEE 29148 compliant Software Requirements Specification detailing functional requirements (`FR-1.1` to `FR-9.5`), non-functional budgets, and traceability matrices.
 * **`adaptive-multimodal-hci-deliverables.md`**: Master breakdown of all Core Deliverables (D1–D5), Research Enhancements (E1–E3), and academic replication artifacts.
 * **`adaptive-multimodal-hci-architecture.md` (DOC3)**: Deep technical specification of the 6 principled layers, sequence diagrams, global uncertainty models, and data schemas.
+* **`adaptive-multimodal-hci-repo-structure.md`**: Repository Architecture and codebase layout specification.
+* **`adaptive-multimodal-hci-sdlc-spiral.md`**: Risk-driven 7-spiral development lifecycle mapping Boehm's 4-quadrant framework to the 6-layer architecture and milestone acceptance gates.
 * **`adaptive-multimodal-hci-implementation-plan.md` (DOC4)**: 4-week execution roadmap, daily milestone breakdown, and test verification suite.
 * **`Proposed_Innovations.md`**: Deep dive into scientific contributions, comparison tables, and state-of-the-art positioning.
 

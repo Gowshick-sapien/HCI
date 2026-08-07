@@ -88,7 +88,11 @@ This project introduces a **Self-Evaluating Adaptive Multimodal Decision Archite
 adaptive-multimodal-hci/
 ├── docs/
 │   ├── adaptive-multimodal-hci-proposal.md            # Canonical Project Proposal
-│   ├── adaptive-multimodal-hci-architecture.md        # Technical System Architecture
+│   ├── adaptive-multimodal-hci-srs.md                 # ISO/IEC/IEEE 29148 SRS Specification
+│   ├── adaptive-multimodal-hci-deliverables.md        # Master Deliverables Specification (D1–D5, E1–E3)
+│   ├── adaptive-multimodal-hci-architecture.md        # Technical System Architecture (6 Layers)
+│   ├── adaptive-multimodal-hci-repo-structure.md      # Base Repository Structure Specification
+│   ├── adaptive-multimodal-hci-sdlc-spiral.md         # Spiral SDLC Methodology Specification
 │   ├── adaptive-multimodal-hci-implementation-plan.md # Engineering Roadmap & Verification
 │   └── Proposed_Innovations.md                        # Technical Innovations Deep-Dive
 ├── src/

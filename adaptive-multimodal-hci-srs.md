@@ -47,6 +47,14 @@ This specification is intended for software engineers, machine learning research
 5. Standardized HCI Usability: Brooke, J., *SUS: A Quick and Dirty Usability Scale*, Usability Evaluation in Industry, 1996.
 6. Cognitive Workload Assessment: Hart & Staveland, *Development of NASA-TLX (Task Load Index)*, Advances in Psychology, 1988.
 
+### 1.6 Related Project Specifications & SDLC Framework
+* **[Project Proposal](file:///d:/HCI/adaptive-multimodal-hci-proposal.md)**: Research thesis, RQ1–RQ4, and scientific framing.
+* **[Project Deliverables Specification](file:///d:/HCI/adaptive-multimodal-hci-deliverables.md)**: Core deliverables (D1–D5) and enhancements (E1–E3).
+* **[Spiral SDLC Methodology Specification](file:///d:/HCI/adaptive-multimodal-hci-sdlc-spiral.md)**: Risk-driven 7-spiral development lifecycle and acceptance gates.
+* **[System Architecture Specification](file:///d:/HCI/adaptive-multimodal-hci-architecture.md)**: Technical design and mathematical models.
+* **[Base Repository Structure Specification](file:///d:/HCI/adaptive-multimodal-hci-repo-structure.md)**: Codebase layout and test suite mapping.
+* **[Project Implementation Plan](file:///d:/HCI/adaptive-multimodal-hci-implementation-plan.md)**: 4-week execution roadmap and empirical protocols.
+
 ---
 
 ## 2. Overall Description

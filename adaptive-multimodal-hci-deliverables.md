@@ -30,6 +30,7 @@ This document provides the exhaustive, publication-grade specification of all **
 │  • DOC2: ISO/IEC/IEEE 29148 Software Requirements Specification (SRS)                            │
 │  • DOC3: System Architecture Specification                                                      │
 │  • DOC4: Project Implementation Plan & 4-Week Engineering Roadmap                                │
+│  • SDLC: Spiral SDLC Methodology Specification (adaptive-multimodal-hci-sdlc-spiral.md)          │
 │  • DOC5: Academic Research Paper Preprint & Open-Science Benchmark Dataset                       │
 │                                                                                                  │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
@@ -419,6 +420,7 @@ src/
 │  DOC2: IEEE 29148 SRS (adaptive-multimodal-hci-srs.md)                 │
 │  DOC3: System Architecture (adaptive-multimodal-hci-architecture.md)   │
 │  DOC4: Implementation Plan (adaptive-multimodal-hci-implementation.md) │
+│  SDLC: Spiral SDLC Methodology (adaptive-multimodal-hci-sdlc-spiral.md)│
 │  DOC5: Academic Research Paper Preprint & Open-Science Dataset Package │
 └────────────────────────────────────────────────────────────────────────┘
 ```
@@ -427,7 +429,8 @@ src/
 2. **DOC2: Software Requirements Specification (SRS)**: ISO/IEC/IEEE 29148 compliant document specifying functional requirements (`FR-1.1` to `FR-9.5`), non-functional constraints, and verification matrices.
 3. **DOC3: System Architecture Specification**: Complete technical design detailing the 6 principled layers, closed-loop feedback pipeline, decoupled Layer 3 sub-stages, global uncertainty propagation model, dual-engine RAE, and schema definitions.
 4. **DOC4: Project Implementation Plan**: 4-week engineering roadmap, milestone tracking, automated test suite invariants, and risk mitigation strategies.
-5. **DOC5: Academic Preprint & Replication Package**: Publication-ready LaTeX manuscript and anonymized benchmark evaluation datasets formatted for open-science dissemination.
+5. **SDLC: Spiral SDLC Methodology Specification**: Risk-driven 7-spiral development lifecycle mapping Boehm's 4-quadrant framework to the 6-layer architecture, risk analysis, and milestone acceptance gates.
+6. **DOC5: Academic Preprint & Replication Package**: Publication-ready LaTeX manuscript and anonymized benchmark evaluation datasets formatted for open-science dissemination.
 
 ---
 

@@ -197,6 +197,18 @@ To rigorously evaluate the framework against standard scientific benchmarks, a f
 
 ---
 
-## 9. Conclusion
+## 9. Related Canonical Specifications & Spiral SDLC Lifecycle
+
+This Project Proposal serves as the foundational academic framing for the comprehensive engineering and documentation suite:
+* **[ISO/IEC/IEEE 29148 SRS](file:///d:/HCI/adaptive-multimodal-hci-srs.md)**: Formal requirements specification and invariant acceptance criteria.
+* **[System Architecture Specification](file:///d:/HCI/adaptive-multimodal-hci-architecture.md)**: Complete 6-layer closed-loop technical architecture.
+* **[Project Deliverables Specification](file:///d:/HCI/adaptive-multimodal-hci-deliverables.md)**: Detailed specifications for deliverables D1–D5, E1–E3, and DOC1–DOC5.
+* **[Spiral SDLC Methodology Specification](file:///d:/HCI/adaptive-multimodal-hci-sdlc-spiral.md)**: Risk-driven 7-spiral development model mapping the 6 layers to iterative verification cycles.
+* **[Base Repository Structure Specification](file:///d:/HCI/adaptive-multimodal-hci-repo-structure.md)**: Codebase organization and module directory layout.
+* **[Project Implementation Plan](file:///d:/HCI/adaptive-multimodal-hci-implementation-plan.md)**: 4-week execution roadmap and empirical protocols.
+
+---
+
+## 10. Conclusion
 
 By shifting the core research focus from raw feature extraction to a **self-evaluating adaptive decision architecture**, this framework directly resolves the primary limitation of multimodal interaction: the failure of static thresholds across diverse human populations. Through variance-informed calibration, continuous implicit feedback observation, global uncertainty modeling, and dual-scale micro/macro adaptation, the system delivers an intelligent, non-intrusive, and mathematically defensible HCI platform capable of personalizing itself seamlessly during natural desktop use.

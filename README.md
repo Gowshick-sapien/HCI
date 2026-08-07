@@ -40,9 +40,10 @@ This project introduces a **Self-Evaluating Adaptive Multimodal Decision Archite
 ```
 
 1. **[Project Proposal](file:///d:/HCI/adaptive-multimodal-hci-proposal.md)**: Research thesis, formal research questions (RQ1–RQ4), theoretical motivation, real-world application domains, and 5-stage empirical validation protocol.
-2. **[System Architecture Specification](file:///d:/HCI/adaptive-multimodal-hci-architecture.md)**: Exhaustive 6-layer design, decision lifecycle sequence diagram, decoupled Layer 3 sub-stages, global uncertainty propagation model, dual-engine Runtime Assessment Engine, dual-scale micro/macro adaptation, and profile schemas.
-3. **[Project Implementation Plan](file:///d:/HCI/adaptive-multimodal-hci-implementation-plan.md)**: 4-week execution roadmap, D1–D5 and E1–E3 deliverables, automated test suite, counterbalanced A/B pilot study protocol, and risk mitigation strategies.
-4. **[Proposed Technical Innovations](file:///d:/HCI/Proposed_Innovations.md)**: Deep dive into the core scientific contributions, comparison tables, and mathematical foundations.
+2. **[Software Requirements Specification (SRS)](file:///d:/HCI/adaptive-multimodal-hci-srs.md)**: ISO/IEC/IEEE 29148 compliant specification detailing functional requirements (FR-1.1 to FR-9.5), performance budgets ($<29.5\text{ms}$), safety/privacy constraints, and verification traceability matrices.
+3. **[System Architecture Specification](file:///d:/HCI/adaptive-multimodal-hci-architecture.md)**: Exhaustive 6-layer design, decision lifecycle sequence diagram, decoupled Layer 3 sub-stages, global uncertainty propagation model, dual-engine Runtime Assessment Engine, dual-scale micro/macro adaptation, and profile schemas.
+4. **[Project Implementation Plan](file:///d:/HCI/adaptive-multimodal-hci-implementation-plan.md)**: 4-week execution roadmap, D1–D5 and E1–E3 deliverables, automated test suite, counterbalanced A/B pilot study protocol, and risk mitigation strategies.
+5. **[Proposed Technical Innovations](file:///d:/HCI/Proposed_Innovations.md)**: Deep dive into the core scientific contributions, comparison tables, and mathematical foundations.
 
 ---
 

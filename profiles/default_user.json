@@ -1,0 +1,72 @@
+{
+  "user_id": "default_user",
+  "version_id": 1,
+  "timestamp_epoch": 0.0,
+  "session_id": "bootstrap_session",
+  "is_session_boundary": true,
+  "modality_weights": {
+    "SCROLL_UP": [0.40, 0.40, 0.20],
+    "SCROLL_DOWN": [0.40, 0.40, 0.20],
+    "NAVIGATE_PREVIOUS": [0.30, 0.30, 0.40],
+    "NAVIGATE_NEXT": [0.30, 0.30, 0.40],
+    "ZOOM_IN": [0.20, 0.30, 0.50],
+    "ZOOM_OUT": [0.20, 0.30, 0.50],
+    "PRIMARY_CLICK": [0.35, 0.25, 0.40],
+    "CLOSE_ACTIVE_WINDOW": [0.20, 0.30, 0.50],
+    "CONFIRM_SUBMIT": [0.30, 0.30, 0.40]
+  },
+  "action_thresholds": {
+    "SCROLL_UP": 0.55,
+    "SCROLL_DOWN": 0.55,
+    "NAVIGATE_PREVIOUS": 0.60,
+    "NAVIGATE_NEXT": 0.60,
+    "ZOOM_IN": 0.65,
+    "ZOOM_OUT": 0.65,
+    "PRIMARY_CLICK": 0.70,
+    "CLOSE_ACTIVE_WINDOW": 0.80,
+    "CONFIRM_SUBMIT": 0.75
+  },
+  "gaze_calibration_matrix": [
+    [1.0, 0.0, 0.0],
+    [0.0, 1.0, 0.0]
+  ],
+  "neutral_pose_mean": [0.0, 0.0, 0.0],
+  "neutral_pose_cov_inv": [
+    [1.0, 0.0, 0.0],
+    [0.0, 1.0, 0.0],
+    [0.0, 0.0, 1.0]
+  ],
+  "user_latency_tempo_tau": 0.60,
+  "running_score_stats": {
+    "SCROLL_UP": {"mean": 0.50, "std": 0.15, "count": 0},
+    "SCROLL_DOWN": {"mean": 0.50, "std": 0.15, "count": 0},
+    "NAVIGATE_PREVIOUS": {"mean": 0.50, "std": 0.15, "count": 0},
+    "NAVIGATE_NEXT": {"mean": 0.50, "std": 0.15, "count": 0},
+    "ZOOM_IN": {"mean": 0.50, "std": 0.15, "count": 0},
+    "ZOOM_OUT": {"mean": 0.50, "std": 0.15, "count": 0},
+    "PRIMARY_CLICK": {"mean": 0.50, "std": 0.15, "count": 0},
+    "CLOSE_ACTIVE_WINDOW": {"mean": 0.50, "std": 0.15, "count": 0},
+    "CONFIRM_SUBMIT": {"mean": 0.50, "std": 0.15, "count": 0}
+  },
+  "adaptation_confidence_index": 0.0,
+  "weight_stability_index": 0.0,
+  "expected_calibration_error": 0.0,
+  "cumulative_adaptation_gain": 0.0,
+  "total_interactions_seen": 0,
+  "total_updates_approved": 0,
+  "total_updates_rejected": 0,
+  "failure_counts_by_taxonomy": {
+    "FALSE_ACTIVATION": 0,
+    "FALSE_REJECTION": 0,
+    "WRONG_TARGET": 0,
+    "LOW_CONFIDENCE": 0,
+    "DELAYED_RESPONSE": 0,
+    "USER_OVERRIDE": 0,
+    "ENVIRONMENTAL_DRIFT": 0
+  },
+  "wald_sprt_score": 0.0,
+  "last_recalibration_timestamp": 0.0,
+  "recalibration_count": 0,
+  "baseline_ambient_lux": 50.0,
+  "baseline_user_distance_mm": 600.0
+}

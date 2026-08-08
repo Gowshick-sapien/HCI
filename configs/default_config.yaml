@@ -1,0 +1,109 @@
+# System Default Configuration for Adaptive Multimodal HCI System
+
+capture:
+  camera_id: 0
+  frame_width: 1280
+  frame_height: 720
+  target_fps: 30
+  ring_buffer_capacity: 5
+  max_capture_latency_ms: 5.0
+
+perception:
+  face_mesh:
+    max_num_faces: 1
+    refine_landmarks: true
+    min_detection_confidence: 0.5
+    min_tracking_confidence: 0.5
+    ear_blink_threshold: 0.18
+  head_pose:
+    canonical_points_count: 6
+    camera_fov_degrees: 60.0
+  hand_tracking:
+    max_num_hands: 2
+    min_detection_confidence: 0.7
+    min_tracking_confidence: 0.5
+    pinch_threshold_normalized: 0.06
+  smoothing:
+    alpha_0: 0.45
+    gamma: 0.005
+    beta: 0.15
+    alpha_min: 0.20
+    alpha_max: 0.85
+
+calibration:
+  wizard:
+    phase_a_readiness_seconds: 10.0
+    phase_b_neutral_seconds: 15.0
+    phase_c_gaze_seconds: 25.0
+    phase_d_tempo_seconds: 25.0
+    phase_e_synthesis_seconds: 15.0
+  geometry:
+    chi2_3dof_95_percent: 7.815
+    gaze_grid_points: 5
+    max_gaze_rmse_px: 45.0
+  tempo:
+    default_tau_seconds: 0.60
+    tau_min_seconds: 0.35
+    tau_max_seconds: 0.95
+
+decision:
+  activation:
+    default_threshold: 0.60
+    threshold_min: 0.35
+    threshold_max: 0.85
+  safety:
+    tier2_dwell_time_ms: 600.0
+    tier2_margin_offset: 0.15
+    tier2_sigma_multiplier: 1.5
+    undo_grace_period_ms: 3000.0
+
+feedback:
+  timing:
+    refractory_window_ms: 200.0
+    active_correction_window_ms: 1800.0
+    stability_expiration_ms: 1800.0
+  detectors:
+    mouse_override_velocity_px_s: 800.0
+    rapid_retry_interval_ms: 1200.0
+    dismissal_interval_ms: 1500.0
+    reversal_interval_ms: 1000.0
+
+assessment:
+  metrics:
+    ewma_adaptation_gain_alpha: 0.10
+    learning_velocity_window_w: 20
+    weight_stability_window_k: 30
+    expected_calibration_error_bins: 10
+  gatekeeper:
+    sample_count_floor_k: 3
+    min_feedback_confidence_cfb: 0.40
+    drift_lockout_sprt_sm: 2.89
+    min_ambient_lux: 20.0
+    max_gaze_variance: 0.25
+
+learning:
+  micro_sgd:
+    base_learning_rate_weights: 0.01
+    base_learning_rate_thresholds: 0.005
+    weight_lower_bound: 0.05
+    weight_upper_bound: 0.85
+    bisection_max_iterations: 20
+    bisection_tolerance: 1e-6
+  macro:
+    epoch_interaction_count: 40
+    sprt_alpha: 0.05
+    sprt_beta: 0.05
+    sprt_p0_baseline_error: 0.08
+    sprt_p1_drift_error: 0.22
+    sprt_upper_threshold_a: 2.89
+    sprt_lower_threshold_b: -2.25
+
+ui:
+  hud:
+    overlay_width: 380
+    overlay_height: 220
+    opacity: 0.88
+    refresh_rate_hz: 30
+    dwell_ring_radius_px: 28
+  dashboard:
+    telemetry_refresh_interval_ms: 250

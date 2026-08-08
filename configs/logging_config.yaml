@@ -1,0 +1,53 @@
+# Logging and Telemetry Event Streaming Configuration
+
+version: 1
+disable_existing_loggers: false
+
+formatters:
+  standard:
+    format: "%(asctime)s [%(levelname)s] [%(name)s]: %(message)s"
+    datefmt: "%Y-%m-%d %H:%M:%S"
+  compact:
+    format: "[%(levelname)s] %(name)s: %(message)s"
+  jsonl:
+    format: "%(message)s"
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: INFO
+    formatter: compact
+    stream: ext://sys.stdout
+
+  system_file:
+    class: logging.handlers.RotatingFileHandler
+    level: DEBUG
+    formatter: standard
+    filename: "logs/system/hci_system.log"
+    maxBytes: 5242880 # 5 MB
+    backupCount: 5
+    encoding: "utf-8"
+
+  telemetry_file:
+    class: logging.handlers.RotatingFileHandler
+    level: INFO
+    formatter: jsonl
+    filename: "logs/telemetry/interaction_events.jsonl"
+    maxBytes: 10485760 # 10 MB
+    backupCount: 10
+    encoding: "utf-8"
+
+loggers:
+  src:
+    level: DEBUG
+    handlers: [console, system_file]
+    propagate: false
+
+  src.storage.telemetry:
+    level: INFO
+    handlers: [telemetry_file]
+    propagate: false
+
+root:
+  level: INFO
+  handlers: [console]

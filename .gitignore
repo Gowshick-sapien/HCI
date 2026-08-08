@@ -38,6 +38,7 @@ wheels/
 .pytest_cache/
 .coverage
 htmlcov/
+.mypy_cache/
 
 # Virtual Environments
 venv/
@@ -45,12 +46,37 @@ env/
 .venv/
 ENV/
 
-# Generated Documents & Build Scripts
+# Runtime Session Telemetry & Logs (Keep .gitkeep)
+logs/telemetry/*
+!logs/telemetry/.gitkeep
+logs/system/*
+!logs/system/.gitkeep
+
+# Generated Reports & Figures (Keep .gitkeep)
+reports/figures/*
+!reports/figures/.gitkeep
+
+# Local user profile instances (Keep template default_user.json and .gitkeep)
+profiles/*
+!profiles/.gitkeep
+!profiles/default_user.json
+
+# Large media video recordings (Keep .gitkeep)
+media/demo_recordings/*
+!media/demo_recordings/.gitkeep
+
+# LaTeX build intermediate artifacts
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.log
+paper/*.out
+paper/*.toc
+paper/*.synctex.gz
+paper/sections/*.aux
+
+# Intermediate Word build documents
 *.docx
 build_*.py
-
-# Intermediate / Draft Markdown Files
 literature-review-summary.md
 literature-review-and-methodology.md
-Project_Applications.md
-Proposed_Innovations.md

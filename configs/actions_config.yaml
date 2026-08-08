@@ -1,0 +1,128 @@
+# Action Taxonomy and Policy Configuration for Adaptive Multimodal HCI
+
+actions:
+  SCROLL_UP:
+    name: "SCROLL_UP"
+    tier: "TIER_1_IMMEDIATE"
+    description: "Continuous upward document or webpage scrolling"
+    default_threshold: 0.55
+    default_modality_weights:
+      gaze: 0.40
+      head: 0.40
+      hand: 0.20
+    os_binding:
+      type: "scroll"
+      amount: 120
+    oppositional_action: "SCROLL_DOWN"
+
+  SCROLL_DOWN:
+    name: "SCROLL_DOWN"
+    tier: "TIER_1_IMMEDIATE"
+    description: "Continuous downward document or webpage scrolling"
+    default_threshold: 0.55
+    default_modality_weights:
+      gaze: 0.40
+      head: 0.40
+      hand: 0.20
+    os_binding:
+      type: "scroll"
+      amount: -120
+    oppositional_action: "SCROLL_UP"
+
+  NAVIGATE_PREVIOUS:
+    name: "NAVIGATE_PREVIOUS"
+    tier: "TIER_1_IMMEDIATE"
+    description: "Navigate back in browser history or document"
+    default_threshold: 0.60
+    default_modality_weights:
+      gaze: 0.30
+      head: 0.30
+      hand: 0.40
+    os_binding:
+      type: "hotkey"
+      keys: ["alt", "left"]
+    oppositional_action: "NAVIGATE_NEXT"
+
+  NAVIGATE_NEXT:
+    name: "NAVIGATE_NEXT"
+    tier: "TIER_1_IMMEDIATE"
+    description: "Navigate forward in browser history or document"
+    default_threshold: 0.60
+    default_modality_weights:
+      gaze: 0.30
+      head: 0.30
+      hand: 0.40
+    os_binding:
+      type: "hotkey"
+      keys: ["alt", "right"]
+    oppositional_action: "NAVIGATE_PREVIOUS"
+
+  ZOOM_IN:
+    name: "ZOOM_IN"
+    tier: "TIER_1_IMMEDIATE"
+    description: "Magnify active view or document"
+    default_threshold: 0.65
+    default_modality_weights:
+      gaze: 0.20
+      head: 0.30
+      hand: 0.50
+    os_binding:
+      type: "hotkey"
+      keys: ["ctrl", "+"]
+    oppositional_action: "ZOOM_OUT"
+
+  ZOOM_OUT:
+    name: "ZOOM_OUT"
+    tier: "TIER_1_IMMEDIATE"
+    description: "Reduce active view or document magnification"
+    default_threshold: 0.65
+    default_modality_weights:
+      gaze: 0.20
+      head: 0.30
+      hand: 0.50
+    os_binding:
+      type: "hotkey"
+      keys: ["ctrl", "-"]
+    oppositional_action: "ZOOM_IN"
+
+  PRIMARY_CLICK:
+    name: "PRIMARY_CLICK"
+    tier: "TIER_2_SAFETY_GATED"
+    description: "Execute primary mouse selection at gaze location"
+    default_threshold: 0.70
+    default_modality_weights:
+      gaze: 0.35
+      head: 0.25
+      hand: 0.40
+    os_binding:
+      type: "click"
+      button: "left"
+    dwell_confirmation_ms: 600.0
+
+  CLOSE_ACTIVE_WINDOW:
+    name: "CLOSE_ACTIVE_WINDOW"
+    tier: "TIER_2_SAFETY_GATED"
+    description: "Close active focused application window"
+    default_threshold: 0.80
+    default_modality_weights:
+      gaze: 0.20
+      head: 0.30
+      hand: 0.50
+    os_binding:
+      type: "hotkey"
+      keys: ["alt", "f4"]
+    dwell_confirmation_ms: 600.0
+
+  CONFIRM_SUBMIT:
+    name: "CONFIRM_SUBMIT"
+    tier: "TIER_2_SAFETY_GATED"
+    description: "Confirm active modal dialogue or commit form"
+    default_threshold: 0.75
+    default_modality_weights:
+      gaze: 0.30
+      head: 0.30
+      hand: 0.40
+    os_binding:
+      type: "hotkey"
+      keys: ["enter"]
+    dwell_confirmation_ms: 600.0

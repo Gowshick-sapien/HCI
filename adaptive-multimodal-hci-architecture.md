@@ -11,15 +11,17 @@ To guarantee modularity, mathematical rigor, and complete separation of concerns
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                           THE SIX PRINCIPLED ARCHITECTURAL LAYERS                                │
+│                         THE REVISED PRINCIPLED ARCHITECTURAL LAYERS                              │
 ├──────────────────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                                  │
-│  [LAYER 1: PERCEPTION]      ──► Observes:     Extracts raw physical cues from webcam stream      │
-│  [LAYER 2: CALIBRATION]     ──► Personalizes: Bootstraps user anatomy, noise variances & tempo   │
-│  [LAYER 3: DECISION]        ──► Decides:      Fuses confidence, verifies safety & dispatches     │
-│  [LAYER 4: OBSERVATION]     ──► Evaluates:    Monitors post-action user behavior via implicit cues│
-│  [LAYER 5: ASSESSMENT]      ──► Validates:    Computes health metrics & gatekeeps updates        │
-│  [LAYER 6: LEARNING]        ──► Learns:       Executes micro/macro SGD, simplex & profile store  │
+│  [LAYER 1 : PERCEPTION]     ──► Observes:     Extracts raw features & gaze dwell from webcam     │
+│  [LAYER 1B: GESTURE VOCAB]  ──► Classifies:   Translates kinematics into named gesture tokens    │
+│  [ARBITER : MODALITY GATE]  ──► Arbitrates:   Suppresses gesture eval during active device use   │
+│  [LAYER 2 : CALIBRATION]    ──► Personalizes: Bootstraps anatomy, noise, gesture & dwell bases   │
+│  [LAYER 3 : DECISION]       ──► Composes:     Resolves spatial target + intent, dispatches       │
+│  [LAYER 4 : OBSERVATION]    ──► Evaluates:    Monitors post-action user behavior via implicit cues│
+│  [LAYER 5 : ASSESSMENT]     ──► Validates:    Computes health metrics & gatekeeps updates        │
+│  [LAYER 6 : LEARNING]       ──► Learns:       Executes micro/macro SGD, simplex & profile store  │
 │                                                                                                  │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -32,21 +34,37 @@ Unlike traditional feed-forward pipelines, the framework executes as an **active
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                           CLOSED-LOOP ADAPTIVE FEEDBACK PIPELINE                                 │
+│                      REVISED CLOSED-LOOP ADAPTIVE FEEDBACK PIPELINE                              │
 ├──────────────────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                                  │
 │           ┌─────────────────────────────────────────────────────────────┐                        │
 │           │                   LAYER 1: PERCEPTION                       │                        │
-│           │    (Webcam 30 FPS → FaceMesh/Iris + Hands + SolvePnP)       │                        │
+│           │  (Webcam 30 FPS → FaceMesh/Iris + Hands + SolvePnP +        │                        │
+│           │   Gaze Dwell Tracker → gaze_dwell_ms, gaze_stability)       │                        │
 │           └──────────────────────────────┬──────────────────────────────┘                        │
-│                                          │ Feature Vector x                                      │
+│                                          │ Raw Feature Vector + Dwell Metrics                    │
+│                                          ▼                                                       │
+│           ┌─────────────────────────────────────────────────────────────┐                        │
+│           │             LAYER 1B: GESTURE VOCABULARY ENGINE             │                        │
+│           │  (Kinematics → Named Token: PINCH / FIST / SWIPE / ...      │                        │
+│           │   Output: gesture_token, c_gesture, requires_gaze_target)   │                        │
+│           └──────────────────────────────┬──────────────────────────────┘                        │
+│                                          │ GestureClassification                                 │
+│                                          ▼                                                       │
+│           ┌─────────────────────────────────────────────────────────────┐                        │
+│           │                  ACTIVE MODALITY ARBITER                    │                        │
+│           │  (FIST → NO_ACTION / keyboard_active → SUPPRESS /           │                        │
+│           │   mouse_active → SOFT_REDUCE / clear → GESTURE mode)        │                        │
+│           └──────────────────────────────┬──────────────────────────────┘                        │
+│                                          │ Gated Feature + Gesture Token                         │
 │                                          ▼                                                       │
 │  ┌────────────────────────┐      ┌──────────────────────────────┐                                │
 │  │ VERSIONED PROFILE STORE│─────►│      LAYER 3: DECISION       │                                │
-│  │ (Profile v_k, ACI_t)   │      │ (3A Fusion → 3B Safety Reason│                                │
-│  └───────────▲────────────┘      │  → 3C OS Context Dispatch)   │                                │
-│              │                   └──────────────┬───────────────┘                                │
-│              │ Profile v_k+1                    │ Executed Action Context                        │
+│  │ (Profile v_k, ACI_t)   │      │ (3A Command Composer →       │                                │
+│  └───────────▲────────────┘      │  3B Safety + Tier 0 Gate →   │                                │
+│              │                   │  3C OS Dispatch + KB Handoff) │                                │
+│              │ Profile v_k+1     └──────────────┬───────────────┘                                │
+│              │                                  │ Executed Action Context                        │
 │              │                                  ▼                                                │
 │  ┌───────────┴────────────┐      ┌──────────────────────────────┐                                │
 │  │    LAYER 6: LEARNING   │      │     LAYER 4: OBSERVATION     │                                │
@@ -75,7 +93,9 @@ sequenceDiagram
     autonumber
     actor User
     participant L1 as Layer 1: Perception
-    participant L3A as Layer 3A: Fusion Engine
+    participant L1B as Layer 1B: Gesture Vocab
+    participant ARB as Modality Arbiter
+    participant L3A as Layer 3A: Command Composer
     participant L3B as Layer 3B: Safety Reasoning
     participant OS as OS / Desktop Dispatcher
     participant L4 as Layer 4: Feedback Observer
@@ -84,21 +104,44 @@ sequenceDiagram
     participant DB as Profile Store (v_k)
 
     User->>L1: Performs physical gesture & gaze glance
-    L1->>L3A: Emits smoothed feature vector x = [s_gaze, s_head, s_hand]
-    DB->>L3A: Provides active weights w_a & threshold θ_a (Profile v_k)
-    L3A->>L3B: Computes S_a(x) = w_aᵀ x. If S_a ≥ θ_a, emits Intent Candidate
-    
-    alt Tier 1 Action (Safe / Continuous)
+    L1->>L1B: Emits raw kinematics + gaze_dwell_ms + gaze_stability
+    L1B->>L1B: Classifies gesture_token (PINCH / FIST / SWIPE / ...)
+    L1B->>ARB: Emits GestureClassification (token, c_gesture, requires_gaze_target)
+
+    alt FIST (REST) token detected
+        ARB->>ARB: NO_ACTION — Midas Touch guard active, block Layer 3
+    else keyboard_active within 800ms
+        ARB->>ARB: KEYBOARD mode — suppress gesture evaluation
+    else mouse_active within 600ms
+        ARB->>L3A: MOUSE_PRIORITY — c_gesture_eff = c_gesture * 0.60
+    else Gesture mode clear
+        ARB->>L3A: Passes full GestureClassification unchanged
+    end
+
+    DB->>L3A: Provides [w_gaze, w_head], θ_a, α, dwell thresholds (Profile v_k)
+    L3A->>L3A: A1: c_target = w_gaze·s_gaze + w_head·s_head; gate: dwell_ms ≥ τ_dwell
+    L3A->>L3A: A2: gate: c_gesture ≥ θ_gesture AND stable_ms ≥ 80ms (Tier 0)
+    L3A->>L3A: A3: S_a = α·c_target + (1-α)·c_gesture if requires_gaze_target else c_gesture
+    L3A->>L3B: Composed Command Candidate (command, gaze_anchor, S_a) if S_a ≥ θ_a
+
+    alt Tier 0 fails (gesture not stable 80ms)
+        L3B->>L3B: Drops candidate — intentionality gate not met
+    else Tier 1 Action (Safe / Continuous)
         L3B->>OS: Direct instant dispatch
     else Tier 2 Action (Destructive)
         L3B->>L3B: Evaluates User-Relative Gate θ_tier2,a & runs 600ms visual dwell
         L3B->>OS: Dispatches on dwell completion
     end
 
-    OS->>L4: Action executed; pushes ActionContext to Queue (dispatched_at = t0)
-    
+    alt Focused element is text input field (UIAutomation check)
+        OS->>OS: Enters KEYBOARD_HANDOFF mode — gesture eval paused
+        OS->>User: Shows "Keyboard Active" HUD indicator
+    else Standard action dispatch
+        OS->>L4: Action executed; pushes ActionContext to Queue (dispatched_at = t0)
+    end
+
     Note over User,L4: Temporal Observation Window [t0 + 200ms, t0 + 1.8s]
-    
+
     alt User Reverses Action (e.g., Ctrl+Z / Oppositional Swipe within 800ms)
         User->>L4: Triggers corrective action (Δt = 800ms)
         L4->>L5: Emits FeedbackEvent(outcome = -1, c_fb = 0.53, failure = FALSE_ACTIVATION)
@@ -108,10 +151,10 @@ sequenceDiagram
 
     L5->>L5: Computes Health Metrics (EWMA AG, WSI, ACI, ECE, SPRT)
     L5->>L5: Evaluates Multi-Criteria Gatekeeper (Drift, Contradiction, Noise, Samples)
-    
+
     alt Gatekeeper Verdict: APPROVE
         L5->>L6: Emits Validated Learning Signal (e_a, g_weight, c_fb)
-        L6->>L6: Executes Decoupled SGD on w_a and θ_a
+        L6->>L6: Executes Decoupled SGD on [w_gaze, w_head], θ_a, α, τ_dwell
         L6->>L6: Applies Box-Constrained Simplex Projection (w_i ∈ [0.05, 0.85])
         L6->>DB: Increments version & writes ProfileSnapshot (Profile v_k+1)
     else Gatekeeper Verdict: REJECT
@@ -177,7 +220,129 @@ Eliminates high-frequency landmark jitter during stationary dwell while eliminat
 $$\hat{x}_t = \alpha_t x_t + (1 - \alpha_t)(\hat{x}_{t-1} + b_{t-1}), \quad b_t = \beta (\hat{x}_t - \hat{x}_{t-1}) + (1 - \beta) b_{t-1}$$
 where dynamic smoothing coefficient $\alpha_t = \text{clip}(\alpha_0 + \gamma \|\mathbf{v}_{\text{wrist}}(t)\|, 0.20, 0.85)$.
 
+### 5.3 Gaze Dwell Tracker Sub-Module
+Tracks temporal gaze fixation to distinguish intentional target acquisition from passive gaze-overs during reading or idle attention. Operates within Layer 1's per-frame loop with negligible overhead ($<0.3$ ms).
+
+**Inputs**: Smoothed screen coordinates $(u_t, v_t)$ from the affine gaze mapping pipeline.
+
+**Computations per frame**:
+$$\sigma^2_{\text{dwell},t} = \frac{1}{W}\sum_{k=0}^{W-1}\left[(u_{t-k}-\bar{u})^2 + (v_{t-k}-\bar{v})^2\right], \quad W = \lceil 0.15 \cdot \text{FPS}\rceil \approx 5 \text{ frames}$$
+$$\text{gaze\_stability}_t = \exp\!\left(-\frac{\sigma^2_{\text{dwell},t}}{R^2}\right), \quad R = 40\text{ px (fixation radius)}$$
+$$\text{gaze\_dwell\_ms}_t = \text{consecutive frames where } \|(u_t,v_t)-(u_{\text{anchor}},v_{\text{anchor}})\| \le R \;\times\; \Delta t_{\text{frame}}$$
+
+**Outputs appended to feature vector**:
+- `gaze_dwell_ms`: Continuous dwell duration in milliseconds on the current spatial anchor.
+- `gaze_stability`: Spatial stability score $\in [0,1]$ over the last 150 ms window.
+- `gaze_anchor`: Declared valid screen coordinate $(u_{\text{anchor}}, v_{\text{anchor}})$ when `gaze_dwell_ms >= profile.gaze_target_dwell_ms` (personalized per user, default 80 ms).
+
+**Gate contract to Layer 3A Stage A1**: A gaze coordinate is accepted as a valid spatial targeting input only when `gaze_dwell_ms >= profile.gaze_target_dwell_ms`. This eliminates false activations from incidental gaze-overs during reading.
+
 ---
+
+## 5A. Layer 1B: Gesture Classifier & Vocabulary Engine
+
+Positioned between Layer 1 (raw perception) and the Modality Arbiter, Layer 1B translates continuous kinematic signals into discrete, semantically named gesture tokens with associated recognition confidences. It is the formal boundary between raw signal processing and semantic command interpretation. The gesture vocabulary is **designer-fixed and version-controlled**; the adaptive engine personalizes only the per-user recognition thresholds, never the semantic mapping.
+
+### 5A.1 Gesture Token Dictionary
+
+| Gesture Token | Detection Condition | `requires_gaze_target` |
+|---|---|---|
+| `PINCH` | $d_{\text{pinch}} < \theta_{\text{pinch}}$ sustained $\ge 1$ frame | True |
+| `PINCH_DOUBLE` | Two `PINCH` events within 400 ms | True |
+| `PINCH_HOLD` | $d_{\text{pinch}} < \theta_{\text{pinch}}$ sustained $\ge 300$ ms | True |
+| `OPEN_PALM` | All 5 finger extension scores $> 0.80$, palm normal facing camera | True |
+| `SWIPE_LEFT` | $v_{\text{wrist},x} < -\theta_{\text{vel}}$ sustained $\ge 80$ ms | False |
+| `SWIPE_RIGHT` | $v_{\text{wrist},x} > +\theta_{\text{vel}}$ sustained $\ge 80$ ms | False |
+| `SWIPE_UP` | $v_{\text{wrist},y} < -\theta_{\text{vel}}$ sustained $\ge 80$ ms | False |
+| `SWIPE_DOWN` | $v_{\text{wrist},y} > +\theta_{\text{vel}}$ sustained $\ge 80$ ms | False |
+| `TWO_FINGER_SPREAD` | $\Delta d_{\text{index-middle}} > +\theta_{\text{spread}}$ per frame | False |
+| `TWO_FINGER_PINCH` | $\Delta d_{\text{index-middle}} < -\theta_{\text{spread}}$ per frame | False |
+| `THUMBS_UP` | Thumb extended, fingers 2-5 curled $>0.75$ | False |
+| `FIST` | All finger curl scores $> 0.80$ — **REST / NO-ACTION guard token** | N/A |
+| `NONE` | No classifiable gesture pattern detected | N/A |
+
+### 5A.2 Gesture-to-Action Semantic Table (Designer-Fixed)
+
+| Gesture Token | OS Action Dispatched |
+|---|---|
+| `PINCH` + gaze target | `LEFT_CLICK` at $(u_{\text{anchor}}, v_{\text{anchor}})$ |
+| `PINCH_DOUBLE` + gaze target | `DOUBLE_CLICK` at $(u_{\text{anchor}}, v_{\text{anchor}})$ |
+| `PINCH_HOLD` + gaze target | `DRAG_START` from $(u_{\text{anchor}}, v_{\text{anchor}})$ |
+| `OPEN_PALM` + gaze target | `RIGHT_CLICK` at $(u_{\text{anchor}}, v_{\text{anchor}})$ |
+| `SWIPE_LEFT` | `NAVIGATE_BACK` (Alt+Left) |
+| `SWIPE_RIGHT` | `NAVIGATE_FORWARD` (Alt+Right) |
+| `SWIPE_UP` | `SCROLL_UP` |
+| `SWIPE_DOWN` | `SCROLL_DOWN` |
+| `TWO_FINGER_SPREAD` | `ZOOM_IN` (Ctrl++) |
+| `TWO_FINGER_PINCH` | `ZOOM_OUT` (Ctrl+-) |
+| `THUMBS_UP` | `CONFIRM` (Enter key) |
+| `FIST` | `NO_ACTION` (REST guard — Midas Touch prevention) |
+| `NONE` | `NO_ACTION` |
+
+### 5A.3 Recognition Confidence Score
+
+$$c_{\text{gesture}} = \text{sigmoid}\!\left(k_s \cdot \left(d_{\text{margin}} - d_{\text{threshold}}\right)\right), \quad k_s = 20$$
+
+where $d_{\text{margin}}$ is the signed distance of the primary kinematic feature from its classification boundary. This confidence feeds into Layer 3A Stage A2 and Layer 5's gatekeeper.
+
+### 5A.4 Output Contract
+
+```python
+@dataclass
+class GestureClassification:
+    gesture_token: str          # Token from vocabulary table above
+    c_gesture: float            # Recognition confidence in [0, 1]
+    requires_gaze_target: bool  # True if action needs a screen coordinate
+    action_intent: str          # Mapped OS action string (from semantic table)
+    stable_duration_ms: float   # How long this token has been continuously held
+```
+
+---
+
+## 5B. Active Modality Arbiter
+
+The Modality Arbiter is a lightweight pre-Layer-3 gating component that monitors concurrent physical device activity and determines whether gesture evaluation should proceed, be suppressed, or be soft-reduced. It elevates mouse and keyboard signals from reactive correction evidence (Layer 4 Sub-Detector 5) to proactive gating conditions before any action can be composed or fired.
+
+### 5B.1 Device Activity Monitor
+
+The Arbiter maintains three rolling activity flags polled asynchronously at 30 Hz via the OS hook already installed for Layer 4:
+
+| Flag | Condition | Window |
+|---|---|---|
+| `keyboard_active` | Any keystroke detected | Last 800 ms |
+| `mouse_active` | Mouse velocity $> 200$ px/s | Last 600 ms |
+| `mouse_clicking` | Any mouse button pressed | Last 300 ms |
+
+### 5B.2 Arbitration Decision Logic
+
+```
+IF gesture_token == FIST:
+    Emit: DEVICE_MODE = NO_ACTION
+    Reason: REST state — Midas Touch prevention guard
+    Action: Block Layer 3 evaluation entirely for this frame
+
+ELIF keyboard_active:
+    Emit: DEVICE_MODE = KEYBOARD
+    Reason: Physical keyboard in active use — no parallel gesture intent
+    Action: Suppress gesture evaluation; pass keyboard events unchanged
+
+ELIF mouse_active OR mouse_clicking:
+    Emit: DEVICE_MODE = MOUSE_PRIORITY
+    Reason: Physical pointing device active — soft confidence reduction
+    Action: c_gesture_effective = c_gesture * 0.60
+
+ELSE:
+    Emit: DEVICE_MODE = GESTURE
+    Reason: No conflicting device activity — full gesture pipeline active
+    Action: Pass GestureClassification unchanged to Layer 3
+```
+
+### 5B.3 Relationship to Layer 4 Sub-Detector 5
+
+Layer 4 Sub-Detector 5 (`Physical Input Override`) remains operational as a post-hoc fallback for misfire cases that slip through the Arbiter's rolling windows. The Arbiter and Sub-Detector 5 are complementary: the Arbiter **prevents** misfires proactively; Sub-Detector 5 **corrects** the residual cases reactively. They are not redundant.
+
+---
+
 
 ## 6. Layer 2: Calibration & Profile Bootstrapping Wizard
 
@@ -397,7 +562,40 @@ class ProfileSnapshot:
     recalibration_count: int
     baseline_ambient_lux: float
     baseline_user_distance_mm: float
-```
+
+    # NEW FIELDS — Gesture Vocabulary, Command Composer & Modality Arbiter
+    gesture_thresholds: dict
+    # Per-token recognition thresholds, personalized per user.
+    # Example: {"PINCH": {"d_pinch_max": 0.045, "sustain_ms": 80},
+    #            "OPEN_PALM": {"extension_min": 0.82},
+    #            "SWIPE": {"velocity_min": 0.35, "sustain_ms": 80}}
+
+    rest_pose_signature: dict
+    # Learned FIST / resting hand landmark geometry for this user.
+    # Stored as 21 normalized 3D landmark coordinates captured during Phase D calibration.
+
+    intentionality_dwell_ms: float
+    # Tier 0 stability gate. Gesture must be held this long before evaluation.
+    # Range: [50, 200] ms. Adapted via macro epoch. Default: 80 ms.
+
+    gaze_target_dwell_ms: float
+    # Minimum gaze fixation duration before coordinate is accepted as a valid target.
+    # Range: [60, 250] ms. Adapted via macro epoch. Default: 80 ms.
+
+    command_composer_alpha: float
+    # Spatial-intent balance weight alpha in Stage A3. Range: [0.30, 0.70].
+    # Higher alpha = gaze-dominant (precise gaze user).
+    # Lower alpha = gesture-dominant (tremor or thick corrective lenses).
+
+    modality_weights_spatial: dict
+    # {action: [w_gaze, w_head]} — spatial resolution weights for Stage A1.
+    # Replaces the legacy three-way modality_weights for gaze+head targeting.
+    # w_hand entry is retired; gesture confidence is now sourced from Layer 1B.
+
+    text_input_mode: str
+    # "keyboard_handoff" — UIAutomation text field detection (Option A, recommended).
+    # "virtual_keyboard" — on-screen keyboard for assistive technology contexts (Option B).
+
 
 ### 11.2 4-Stage Failure Governance Subsystem
 1. **Stage 1 (Detection)**: 5 asynchronous negative sub-detectors.

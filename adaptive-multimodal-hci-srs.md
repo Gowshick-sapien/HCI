@@ -22,10 +22,15 @@ This Software Requirements Specification (SRS) provides the complete, authoritat
 * **Advisory / Recommended**: Denoted by the keyword `SHOULD`.
 * **Optional / Future Enhancement**: Denoted by the keyword `MAY`.
 * **Mathematical Notation**:
-  * $\mathbf{x} = [s_{\text{gaze}}, s_{\text{head}}, s_{\text{hand}}]^T \in [0, 1]^3$: Normalized perceptual feature confidence vector.
-  * $\mathbf{w}_a = [w_{a, \text{gaze}}, w_{a, \text{head}}, w_{a, \text{hand}}]^T \in \Delta^2$: Per-action modality weight vector on the unit 2-simplex ($\sum_{i=1}^3 w_{a, i} = 1.0, w_{a, i} \in [0.05, 0.85]$).
-  * $S_a(\mathbf{x}) = \mathbf{w}_a^T \mathbf{x} = \sum_{i=1}^3 w_{a, i} s_i \in [0.0, 1.0]$: Fused multimodal confidence score for action candidate $a$.
-  * $\theta_a \in [0.35, 0.85]$: Per-user, per-action activation threshold.
+  * $\mathbf{x}_{\text{spatial}} = [s_{\text{gaze}}, s_{\text{head}}]^T \in [0, 1]^2$: Normalized spatial targeting confidence vector (gaze = "where").
+  * $c_{\text{gesture}} \in [0, 1]$: Gesture classification confidence score emitted by Layer 1B (gesture = "what").
+  * $\mathbf{w}_{a, \text{spatial}} = [w_{a, \text{gaze}}, w_{a, \text{head}}]^T \in \Delta^1$: Per-action spatial targeting weight vector on the unit 1-simplex ($\sum w_i = 1.0, w_i \in [0.05, 0.85]$).
+  * $c_{\text{target}} = w_{\text{gaze}} \cdot s_{\text{gaze}} + w_{\text{head}} \cdot s_{\text{head}} \in [0, 1]$: Stage A1 spatial resolution score.
+  * $\alpha \in [0.30, 0.70]$: Per-user command composition weight (learned; gaze-dominant vs. gesture-dominant).
+  * $S_a = \alpha \cdot c_{\text{target}} + (1-\alpha) \cdot c_{\text{gesture}}$ (gaze-targeted actions), or $S_a = c_{\text{gesture}}$ (self-contained swipe/zoom gestures).
+  * $\theta_a \in [0.35, 0.85]$: Per-user, per-action composite activation threshold.
+  * $\tau_{\text{dwell}} \in [60, 250]\text{ ms}$: Per-user gaze dwell gate duration.
+  * $\tau_{\text{intent}} \in [50, 200]\text{ ms}$: Per-user Tier 0 gesture stability gate duration.
   * $\theta_{\text{tier2}, a} = \min(0.95, \max(\theta_a + 0.15, \mu_{S, a} + 1.5\sigma_{S, a}))$: User-relative destructive safety threshold.
   * $c_{fb}(\Delta t) = \exp(-(\Delta t - 0.20)/\tau_{\text{user}})$: Continuous supervisory feedback confidence.
   * $C_{\text{update}}$: Global learning confidence modulating SGD step size ($\eta_{\text{eff}} = \eta_0 \cdot C_{\text{update}}$).
@@ -64,21 +69,37 @@ The system operates as an autonomous background service interfacing between a st
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                           CLOSED-LOOP ADAPTIVE FEEDBACK PIPELINE                                 │
+│                      REVISED CLOSED-LOOP ADAPTIVE FEEDBACK PIPELINE                              │
 ├──────────────────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                                  │
 │           ┌─────────────────────────────────────────────────────────────┐                        │
 │           │                   LAYER 1: PERCEPTION                       │                        │
-│           │    (Webcam 30 FPS → FaceMesh/Iris + Hands + SolvePnP)       │                        │
+│           │  (Webcam 30 FPS → FaceMesh/Iris + Hands + SolvePnP +        │                        │
+│           │   Gaze Dwell Tracker → gaze_dwell_ms, gaze_stability)       │                        │
 │           └──────────────────────────────┬──────────────────────────────┘                        │
-│                                          │ Feature Vector x                                      │
+│                                          │ Raw Feature Vector + Dwell Metrics                    │
+│                                          ▼                                                       │
+│           ┌─────────────────────────────────────────────────────────────┐                        │
+│           │             LAYER 1B: GESTURE VOCABULARY ENGINE             │                        │
+│           │  (Kinematics → Named Token: PINCH / FIST / SWIPE / ...      │                        │
+│           │   Output: gesture_token, c_gesture, requires_gaze_target)   │                        │
+│           └──────────────────────────────┬──────────────────────────────┘                        │
+│                                          │ GestureClassification                                 │
+│                                          ▼                                                       │
+│           ┌─────────────────────────────────────────────────────────────┐                        │
+│           │                  ACTIVE MODALITY ARBITER                    │                        │
+│           │  (FIST → NO_ACTION / keyboard_active → SUPPRESS /           │                        │
+│           │   mouse_active → SOFT_REDUCE / clear → GESTURE mode)        │                        │
+│           └──────────────────────────────┬──────────────────────────────┘                        │
+│                                          │ Gated Feature + Gesture Token                         │
 │                                          ▼                                                       │
 │  ┌────────────────────────┐      ┌──────────────────────────────┐                                │
 │  │ VERSIONED PROFILE STORE│─────►│      LAYER 3: DECISION       │                                │
-│  │ (Profile v_k, ACI_t)   │      │ (3A Fusion → 3B Safety Reason│                                │
-│  └───────────▲────────────┘      │  → 3C OS Context Dispatch)   │                                │
-│              │                   └──────────────┬───────────────┘                                │
-│              │ Profile v_k+1                    │ Executed Action Context                        │
+│  │ (Profile v_k, ACI_t)   │      │ (3A Command Composer →       │                                │
+│  └───────────▲────────────┘      │  3B Safety + Tier 0 Gate →   │                                │
+│              │                   │  3C OS Dispatch + KB Handoff) │                                │
+│              │ Profile v_k+1     └──────────────┬───────────────┘                                │
+│              │                                  │ Executed Action Context                        │
 │              │                                  ▼                                                │
 │  ┌───────────┴────────────┐      ┌──────────────────────────────┐                                │
 │  │    LAYER 6: LEARNING   │      │     LAYER 4: OBSERVATION     │                                │
@@ -96,13 +117,15 @@ The system operates as an autonomous background service interfacing between a st
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 2.2 Summary of the Six Principled Architectural Layers
-* **Layer 1 (Perception)**: *Observes* raw physical cues from 30 FPS webcam stream.
-* **Layer 2 (Calibration)**: *Personalizes* user anatomy, sensor noise variances, and tempo baselines (`Profile v1`).
-* **Layer 3 (Decision)**: *Decides* intent (Fusion 3A), reasons about safety (Safety 3B), and dispatches actions (OS 3C).
+### 2.2 Summary of the Revised Principled Architectural Layers
+* **Layer 1 (Perception)**: *Observes* raw physical cues from 30 FPS webcam stream and runs the Gaze Dwell Tracker sub-module.
+* **Layer 1B (Gesture Vocabulary Engine)**: *Classifies* continuous hand kinematics into 13 discrete named gesture tokens with recognition confidence and a `requires_gaze_target` flag.
+* **Modality Arbiter**: *Arbitrates* device activity, suppressing or soft-reducing gesture evaluation when the physical keyboard or mouse is in active use.
+* **Layer 2 (Calibration)**: *Personalizes* user anatomy, sensor noise variances, gesture thresholds, REST pose, and tempo baselines (`Profile v1`).
+* **Layer 3 (Decision)**: *Composes* (Command Composer 3A), reasons about safety with Tier 0/1/2 gates (3B), and dispatches with keyboard handoff (3C).
 * **Layer 4 (Observation)**: *Evaluates* post-action user behavior via a temporal state machine and 5 asynchronous sub-detectors.
 * **Layer 5 (Assessment)**: *Validates* updates via continuous health metrics (5A) and an intelligent gatekeeper (5B).
-* **Layer 6 (Learning)**: *Learns* parameters via micro-SGD with 1D box simplex projection and epoch-driven macro adaptation.
+* **Layer 6 (Learning)**: *Learns* parameters via micro-SGD on an expanded parameter set ($\mathbf{w}_{\text{spatial}}, \theta_a, \alpha, \tau_{\text{dwell}}, \tau_{\text{intent}}$) with epoch-driven macro adaptation.
 
 ### 2.3 User Classes and Characteristics
 1. **General Desktop Users**: Require zero-configuration, seamless touchless navigation (scrolling, tab navigation, media control).
@@ -130,15 +153,17 @@ The system operates as an autonomous background service interfacing between a st
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
 │                         FUNCTIONAL REQUIREMENTS MAPPING MATRIX                                   │
 ├──────────────────────────────────────────────────────────────────────────────────────────────────┤
-│  Layer 1: Perception & Feature Extraction ────────► FR-1.1 to FR-1.6                             │
-│  Layer 2: Calibration & Profile Bootstrapping ────► FR-2.1 to FR-2.6                             │
-│  Layer 3: Decoupled Decision & Safety Engine ─────► FR-3.1 to FR-3.7                             │
-│  Layer 4: Implicit Feedback Observer ─────────────► FR-4.1 to FR-4.7                             │
-│  Layer 5: Runtime Assessment Engine (RAE) ────────► FR-5.1 to FR-5.8                             │
-│  Layer 6: Online Learning & Macro Adaptation ─────► FR-6.1 to FR-6.8                             │
-│  Cross-Cutting: Global Uncertainty Propagation ──► FR-7.1 to FR-7.4                             │
-│  Cross-Cutting: Explainability HUD & UI ──────────► FR-8.1 to FR-8.5                             │
-│  Cross-Cutting: Diagnostics & Failure Governance ─► FR-9.1 to FR-9.5                             │
+│  Layer 1:   Perception & Feature Extraction ──────────────────► FR-1.1 to FR-1.8                 │
+│  Layer 1B:  Gesture Vocabulary Engine ────────────────────────► FR-1B.1 to FR-1B.4               │
+│  Arbiter:   Active Modality Arbiter ───────────────────────────► FR-ARB.1 to FR-ARB.3             │
+│  Layer 2:   Calibration & Profile Bootstrapping ──────────────► FR-2.1 to FR-2.7                 │
+│  Layer 3:   Command Composer, Safety & OS Dispatch ───────────► FR-3.1 to FR-3.9                 │
+│  Layer 4:   Implicit Feedback Observer ───────────────────────► FR-4.1 to FR-4.7                 │
+│  Layer 5:   Runtime Assessment Engine (RAE) ──────────────────► FR-5.1 to FR-5.8                 │
+│  Layer 6:   Online Learning & Macro Adaptation ───────────────► FR-6.1 to FR-6.8                 │
+│  Cross-Cutting: Global Uncertainty Propagation ───────────────► FR-7.1 to FR-7.4                 │
+│  Cross-Cutting: Explainability HUD & UI ──────────────────────► FR-8.1 to FR-8.5                 │
+│  Cross-Cutting: Diagnostics & Failure Governance ─────────────► FR-9.1 to FR-9.5                 │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -166,10 +191,9 @@ The system operates as an autonomous background service interfacing between a st
 * **Acceptance Criteria**: Pose estimation latency $< 2.0\text{ ms}$; angular resolution $< 0.5^\circ$.
 * **Verification**: Unit test `test_head_pose_estimator.py`.
 
-#### FR-1.4: 3D Hand Kinematics & Gesture Syntax Extraction
-* **Description**: The system SHALL extract 21 3D hand landmarks via MediaPipe Hands, deriving normalized pinch aperture $d_{\text{pinch}} = \|\mathbf{p}_{\text{thumb\_tip}} - \mathbf{p}_{\text{index\_tip}}\|$, palm normal vector $\mathbf{n}_{\text{palm}}$, and wrist velocity vector $\mathbf{v}_{\text{wrist}}(t)$.
-* **Mathematical Specification**: Hand confidence $s_{\text{hand}} \in [0.0, 1.0]$ SHALL be derived via sigmoid activation on gesture syntax match.
-* **Acceptance Criteria**: Hand tracking latency $< 6.0\text{ ms}$; gesture detection accuracy $> 98\%$ on unobstructed hands.
+#### FR-1.4: 3D Hand Kinematics Extraction
+* **Description**: The system SHALL extract 21 3D hand landmarks via MediaPipe Hands, deriving normalized pinch aperture $d_{\text{pinch}} = \|\mathbf{p}_{\text{thumb\_tip}} - \mathbf{p}_{\text{index\_tip}}\|$, palm normal vector $\mathbf{n}_{\text{palm}}$, finger extension scores, and wrist velocity vector $\mathbf{v}_{\text{wrist}}(t)$. The raw kinematics ARE NOT interpreted here — they are emitted to Layer 1B for gesture classification.
+* **Acceptance Criteria**: Hand tracking latency $< 6.0\text{ ms}$; all 21 landmark coordinates extracted per frame.
 * **Verification**: Unit test `test_hand_pose_extractor.py`.
 
 #### FR-1.5: Adaptive Holt-Winters Spatial-Temporal Filter
@@ -181,9 +205,73 @@ The system operates as an autonomous background service interfacing between a st
 * **Verification**: Unit test `test_holt_winters_filter.py`.
 
 #### FR-1.6: Perceptual Feature Vector Assembly
-* **Description**: The system SHALL assemble the smoothed features into a normalized vector $\mathbf{x} = [s_{\text{gaze}}, s_{\text{head}}, s_{\text{hand}}]^T \in [0.0, 1.0]^3$ accompanied by sensor covariance matrix $\boldsymbol{\Sigma}_{\text{sensor}}$.
+* **Description**: The system SHALL assemble the smoothed spatial features into a normalized vector $\mathbf{x}_{\text{spatial}} = [s_{\text{gaze}}, s_{\text{head}}]^T \in [0.0, 1.0]^2$ accompanied by sensor covariance matrix $\boldsymbol{\Sigma}_{\text{sensor}}$. Note: hand confidence is NO LONGER a direct element of this vector; it is replaced by the `GestureClassification` output of Layer 1B.
 * **Acceptance Criteria**: Output vector emitted every frame cycle within $\le 20.5\text{ ms}$ of capture.
 * **Verification**: Integration test `test_perception_pipeline.py`.
+
+#### FR-1.7: Gaze Dwell Tracker
+* **Description**: The system SHALL track temporal gaze fixation within Layer 1's per-frame loop and emit two additional values per frame:
+  * `gaze_dwell_ms`: Continuous duration (ms) that gaze coordinates have remained within fixation radius $R = 40\text{ px}$ of a spatial anchor.
+  * `gaze_stability`: Spatial variance score $\in [0, 1]$ over a 150 ms sliding window.
+  * `gaze_anchor`: Valid screen coordinate $(u_{\text{anchor}}, v_{\text{anchor}})$ declared when `gaze_dwell_ms >= profile.gaze_target_dwell_ms`.
+* **Mathematical Specification**:
+  $$\text{gaze\_stability}_t = \exp\!\left(-\frac{\sigma^2_{\text{dwell},t}}{R^2}\right), \quad R = 40\text{ px}$$
+* **Acceptance Criteria**: Per-frame overhead $< 0.3\text{ ms}$; `gaze_anchor` declared only when fixation criteria are met.
+* **Verification**: Unit test `test_gaze_dwell_tracker.py`.
+
+#### FR-1.8: Perceptual Output Contract
+* **Description**: The system SHALL assemble all Layer 1 outputs — spatial feature vector, gaze dwell metrics, and gaze anchor — into a complete `PerceptionFrame` record emitted to both Layer 1B and Layer 3.
+* **Acceptance Criteria**: All fields populated per frame; `gaze_anchor` is `None` when dwell gate is not met.
+* **Verification**: Integration test `test_perception_pipeline.py`.
+
+---
+
+### 3.1B Layer 1B: Gesture Vocabulary Engine
+
+#### FR-1B.1: Fixed Gesture Token Dictionary
+* **Description**: The system SHALL implement a designer-fixed, version-controlled gesture token dictionary containing exactly 13 tokens: `PINCH`, `PINCH_DOUBLE`, `PINCH_HOLD`, `OPEN_PALM`, `SWIPE_LEFT`, `SWIPE_RIGHT`, `SWIPE_UP`, `SWIPE_DOWN`, `TWO_FINGER_SPREAD`, `TWO_FINGER_PINCH`, `THUMBS_UP`, `FIST`, `NONE`. No new tokens SHALL be added without a version increment to the vocabulary schema.
+* **Acceptance Criteria**: Classification lookup table loaded from `configs/gesture_vocabulary.yaml`; unknown tokens rejected at parse time.
+* **Verification**: Unit test `test_gesture_vocabulary.py`.
+
+#### FR-1B.2: Gesture Token Classification
+* **Description**: The system SHALL classify the hand kinematic features into a named gesture token and compute a recognition confidence score:
+  $$c_{\text{gesture}} = \text{sigmoid}\!\left(k_s \cdot \left(d_{\text{margin}} - d_{\text{threshold}}\right)\right), \quad k_s = 20$$
+  where $d_{\text{margin}}$ is the signed distance of the primary kinematic feature from its per-user personalized classification boundary.
+* **Acceptance Criteria**: Classification latency $< 0.5\text{ ms}$; confidence correctly bounded in $[0, 1]$.
+* **Verification**: Unit test `test_gesture_classifier.py`.
+
+#### FR-1B.3: FIST REST State Guard
+* **Description**: The system SHALL classify the FIST gesture (all finger curl scores $> 0.80$) as a dedicated `NO_ACTION` REST state. A FIST token SHALL block ALL downstream gesture evaluation, irrespective of gaze state. This is the primary Midas Touch prevention mechanism.
+* **Acceptance Criteria**: FIST token always emits `action_intent = NO_ACTION`; verified on synthetic curled-finger traces.
+* **Verification**: Unit test `test_gesture_classifier.py`.
+
+#### FR-1B.4: GestureClassification Output Contract
+* **Description**: Layer 1B SHALL emit a `GestureClassification` dataclass per frame containing: `gesture_token`, `c_gesture`, `requires_gaze_target`, `action_intent`, `stable_duration_ms`.
+* **Acceptance Criteria**: `requires_gaze_target = True` for all pointer gestures (PINCH family, OPEN_PALM); `False` for directional/self-contained gestures (SWIPEs, ZOOM, THUMBS_UP).
+* **Verification**: Unit test `test_gesture_classifier.py`.
+
+---
+
+### 3.1C Active Modality Arbiter
+
+#### FR-ARB.1: Rolling Device Activity Monitor
+* **Description**: The system SHALL maintain three rolling boolean activity flags by monitoring OS hook events asynchronously at 30 Hz: `keyboard_active` (any keystroke within 800 ms), `mouse_active` (mouse velocity $> 200\text{ px/s}$ within 600 ms), `mouse_clicking` (any button press within 300 ms).
+* **Acceptance Criteria**: Flag state correctly reflects device activity; latency of flag update $< 1\text{ ms}$.
+* **Verification**: Unit test `test_modality_arbiter.py`.
+
+#### FR-ARB.2: Arbitration Decision Logic
+* **Description**: The system SHALL apply the following priority-ordered arbitration rules every frame before passing any signal to Layer 3:
+  1. If `gesture_token == FIST`: emit `DEVICE_MODE = NO_ACTION`, block Layer 3 entirely.
+  2. Else if `keyboard_active`: emit `DEVICE_MODE = KEYBOARD`, suppress gesture evaluation.
+  3. Else if `mouse_active OR mouse_clicking`: emit `DEVICE_MODE = MOUSE_PRIORITY`, set `c_gesture_eff = c_gesture * 0.60`.
+  4. Else: emit `DEVICE_MODE = GESTURE`, pass `GestureClassification` unchanged.
+* **Acceptance Criteria**: Correct mode emitted for all four states on synthetic test traces.
+* **Verification**: Unit test `test_modality_arbiter.py`.
+
+#### FR-ARB.3: Complementary Relationship with Layer 4 Sub-Detector 5
+* **Description**: The Arbiter SHALL operate as a proactive pre-fire gate. Layer 4 Sub-Detector 5 (`Physical Input Override`) SHALL remain operational as a residual post-hoc correction fallback. The two components are complementary and SHALL NOT be merged.
+* **Acceptance Criteria**: Architectural separation documented; both components independently testable.
+* **Verification**: Integration test `test_closed_loop_feedback.py`.
 
 ---
 
@@ -194,7 +282,10 @@ The system operates as an autonomous background service interfacing between a st
   * *Phase A (0–10s)*: Hardware & Lighting Readiness Verification.
   * *Phase B (10–25s)*: Neutral Head Pose & Motion Envelope (3 samples).
   * *Phase C (25–50s)*: 5-Point Ocular Gaze Calibration Grid (5 samples).
-  * *Phase D (50–75s)*: Hand Gesture Kinematics & Reaction Tempo (4 samples).
+  * *Phase D (50–75s)*: Hand Gesture Kinematics, REST Pose & Reaction Tempo (5 samples):
+    * Captures user REST pose (FIST landmark geometry — 21 normalized 3D coordinates).
+    * Captures per-gesture personalized thresholds ($\theta_{\text{pinch}}, \theta_{\text{vel}}, \theta_{\text{spread}}$) from Phase D samples.
+    * Measures visual-motor reaction tempo $\tau_{\text{user}}$.
   * *Phase E (75–90s)*: Profile Synthesis & Initial Weight Generation (`Profile v1`).
 * **Acceptance Criteria**: Total wizard duration $\le 90\text{ s}$; automated profile synthesis $< 50\text{ ms}$.
 * **Verification**: Interactive UI verification test `test_calibration_wizard.py`.
@@ -229,78 +320,95 @@ The system operates as an autonomous background service interfacing between a st
 
 ---
 
-### 3.3 Layer 3: Decoupled Decision, Safety Reasoning & Execution
+### 3.3 Layer 3: Command Composer, Safety Reasoning & OS Dispatch
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│                        LAYER 3 INTERNAL SUB-STAGES                     │
+│                  LAYER 3 REVISED INTERNAL SUB-STAGES                   │
 ├────────────────────────────────────────────────────────────────────────┤
 │                                                                        │
-│  [Feature Vector x]                                                    │
+│  [Gated GestureClassification + Gaze Feature Vec from Arbiter]         │
 │        │                                                               │
 │        ▼                                                               │
 │  ┌──────────────────────────────────────────────┐                      │
-│  │ Stage 3A: Confidence Fusion & Intent Evaluator│                      │
-│  │ • S_a(x) = w_gaze·s_gaze + w_head·s_head +   │                      │
-│  │            w_hand·s_hand                     │                      │
-│  │ • Evaluates base condition: S_a(x) ≥ θ_a     │                      │
+│  │ Stage 3A: Two-Stage Command Composer         │                      │
+│  │  A1: c_target = w_gaze·s_gaze + w_head·s_head│                      │
+│  │      Gate: c_target ≥ θ_target               │                      │
+│  │            AND gaze_dwell_ms ≥ τ_dwell        │                      │
+│  │  A2: Gate: c_gesture ≥ θ_gesture             │                      │
+│  │            AND stable_ms ≥ τ_intent (Tier 0)  │                      │
+│  │  A3: S_a = α·c_target + (1-α)·c_gesture      │                      │
+│  │      (or S_a = c_gesture if not gaze-targeted)│                      │
+│  │      Final gate: S_a ≥ θ_a                   │                      │
 │  └──────────────────────┬───────────────────────┘                      │
-│                         │ (Intent Candidate)                           │
+│                         │ (Composed Command Candidate)                 │
 │                         ▼                                              │
 │  ┌──────────────────────────────────────────────┐                      │
-│  │ Stage 3B: Post-Decision Safety Reasoning     │                      │
-│  │ • Determines Action Tier (Tier 1 vs Tier 2)  │                      │
-│  │ • Tier 2 Gate: S_a ≥ min(0.95, max(θ_a+0.15, │                      │
-│  │                           μ_S + 1.5σ_S))     │                      │
-│  │ • Manages 600ms HUD visual dwell confirmation│                      │
-│  │ • Arms 3.0s Grace-Period Undo Hook Stack     │                      │
+│  │ Stage 3B: Safety Reasoning & Tier Gates      │                      │
+│  │ • Tier 1 (Safe): Immediate dispatch          │                      │
+│  │ • Tier 2 (Destructive):                      │                      │
+│  │   S_a ≥ min(0.95, max(θ_a+0.15, μ_S+1.5σ_S))│                      │
+│  │   600ms HUD visual dwell confirmation        │                      │
+│  │   Arms 3.0s Grace-Period Undo Hook Stack     │                      │
 │  └──────────────────────┬───────────────────────┘                      │
 │                         │ (Approved for Execution)                     │
 │                         ▼                                              │
 │  ┌──────────────────────────────────────────────┐                      │
 │  │ Stage 3C: OS Execution & Context Dispatch    │                      │
-│  │ • Executes native OS API (pyautogui / win32) │                      │
-│  │ • Pushes immutable ActionContext to Layer 4  │                      │
+│  │ • UIAutomation text field detection:         │                      │
+│  │   If focused = text input → KEYBOARD_HANDOFF │                      │
+│  │   (pause gesture eval, show HUD indicator)   │                      │
+│  │ • Standard: Execute OS API + push ActionCtx  │                      │
 │  └──────────────────────────────────────────────┘                      │
 │                                                                        │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-#### FR-3.1: Stage 3A Weighted Confidence Late Fusion
-* **Description**: The system SHALL compute the scalar fused confidence score $S_a(\mathbf{x}) = \mathbf{w}_a^T \mathbf{x} = \sum_{i=1}^3 w_{a, i} s_i$ for each action candidate $a \in \mathcal{A}$.
-* **Acceptance Criteria**: Mathematical evaluation latency $< 0.1\text{ ms}$; fused score bounded strictly in $[0.0, 1.0]$.
-* **Verification**: Unit test `test_confidence_fuser.py`.
+#### FR-3.1: Stage 3A Spatial Resolution (Gaze + Head)
+* **Description**: The system SHALL compute a spatial targeting confidence score $c_{\text{target}} = w_{\text{gaze}} \cdot s_{\text{gaze}} + w_{\text{head}} \cdot s_{\text{head}}$ and gate: $c_{\text{target}} \ge \theta_{\text{target}}$ AND `gaze_dwell_ms >= profile.gaze_target_dwell_ms`.
+* **Acceptance Criteria**: Spatial gate blocks actions when gaze is not sufficiently fixated.
+* **Verification**: Unit test `test_command_composer.py`.
 
-#### FR-3.2: Stage 3A Intent Candidate Trigger
-* **Description**: The system SHALL emit an `IntentCandidate(action_id, a, S_a, \theta_a)` if and only if $S_a(\mathbf{x}) \ge \theta_a$ and no refractory lockout is active.
-* **Acceptance Criteria**: Intent candidate passed directly to Stage 3B within the same frame cycle.
-* **Verification**: Unit test `test_confidence_fuser.py`.
+#### FR-3.2: Stage 3A Intent Resolution (Tier 0 Gate)
+* **Description**: The system SHALL enforce the Tier 0 intentionality gate: $c_{\text{gesture}} \ge \theta_{\text{gesture}}$ AND `stable_duration_ms >= profile.intentionality_dwell_ms`. Actions whose gesture token has not been held continuously for the Tier 0 duration SHALL be dropped silently before any OS interaction.
+* **Acceptance Criteria**: Transient kinematics (held $< \tau_{\text{intent}}$) never result in dispatched actions.
+* **Verification**: Unit test `test_tier0_intentionality_gate.py`.
 
-#### FR-3.3: Stage 3B Action Tier Classification
+#### FR-3.3: Stage 3A Asymmetric Command Composition
+* **Description**: The system SHALL compose the final confidence score as:
+  $$S_a = \begin{cases} \alpha \cdot c_{\text{target}} + (1-\alpha) \cdot c_{\text{gesture}} & \text{if requires\_gaze\_target} \\ c_{\text{gesture}} & \text{otherwise} \end{cases}$$
+  where $\alpha \in [0.30, 0.70]$ is a learned per-user composition weight stored in `ProfileSnapshot.command_composer_alpha`.
+* **Acceptance Criteria**: For self-contained gestures, $c_{\text{target}}$ is ignored entirely and no gaze fixation is required.
+* **Verification**: Unit test `test_command_composer.py`.
+
+#### FR-3.4: Stage 3A Final Intent Gate
+* **Description**: The system SHALL emit a `ComposedCommand(action, gaze_anchor, S_a)` only if $S_a \ge \theta_a$.
+* **Acceptance Criteria**: Latency of Stages A1–A3 $< 0.2\text{ ms}$.
+* **Verification**: Unit test `test_command_composer.py`.
+
+#### FR-3.5: Stage 3B Action Tier Classification
 * **Description**: The system SHALL classify every action into one of two safety tiers:
   * *Tier 1 (Safe / Reversible / Continuous)*: Scrolling, tab switching, media playback, cursor motion.
   * *Tier 2 (Destructive / State-Altering)*: Window closure, application launch, system sleep, file deletion.
 * **Acceptance Criteria**: Tier classification lookup latency $< 0.05\text{ ms}$.
 * **Verification**: Unit test `test_safety_gatekeeper.py`.
 
-#### FR-3.4: Stage 3B Tier-1 Instant Execution Path
-* **Description**: For Tier-1 actions, Stage 3B SHALL forward the intent candidate immediately to Stage 3C without delay.
-* **Acceptance Criteria**: Forwarding latency $< 0.1\text{ ms}$.
-* **Verification**: Integration test `test_layer3_decoupling.py`.
-
-#### FR-3.5: Stage 3B User-Relative Tier-2 Safety Dwell Gate
-* **Description**: For Tier-2 actions, Stage 3B SHALL enforce a dynamic safety threshold:
-  $$\theta_{\text{tier2}, a} = \min\left(0.95, \ \max(\theta_a + 0.15, \ \mu_{S, a} + 1.5\sigma_{S, a})\right)$$
-  and mandate a $600\text{ ms}$ visual dwell confirmation on the HUD overlay before releasing the command.
-* **Acceptance Criteria**: If confidence drops below $\theta_{\text{tier2}, a}$ before $600\text{ ms}$, the action is aborted without OS execution.
+#### FR-3.6: Stage 3B Tier-2 User-Relative Safety Dwell Gate
+* **Description**: For Tier-2 actions, Stage 3B SHALL enforce $\theta_{\text{tier2}, a} = \min(0.95, \max(\theta_a + 0.15, \mu_{S,a} + 1.5\sigma_{S,a}))$ and mandate a $600\text{ ms}$ visual dwell confirmation on the HUD overlay.
+* **Acceptance Criteria**: If confidence drops below $\theta_{\text{tier2}, a}$ before $600\text{ ms}$, the action is aborted.
 * **Verification**: Unit test `test_safety_gatekeeper.py`.
 
-#### FR-3.6: Stage 3B Grace-Period Undo Hook Arming
-* **Description**: Upon approving any Tier-2 action, Stage 3B SHALL arm a $3.0\text{ s}$ OS-level undo interceptor enabling instantaneous reversal via keyboard or gesture.
+#### FR-3.7: Stage 3B Grace-Period Undo Hook Arming
+* **Description**: Upon approving any Tier-2 action, Stage 3B SHALL arm a $3.0\text{ s}$ OS-level undo interceptor.
 * **Acceptance Criteria**: Undo interceptor active for exactly $3.0\text{ s}$ post-dispatch.
 * **Verification**: Unit test `test_safety_gatekeeper.py`.
 
-#### FR-3.7: Stage 3C Native OS Action Execution & Context Dispatch
+#### FR-3.8: Stage 3C Text Input Keyboard Handoff
+* **Description**: Stage 3C SHALL check the OS-focused element type via the UIAutomation accessibility API before every dispatch. If the focused element is a text input field, the system SHALL enter `KEYBOARD_HANDOFF` mode: (1) pause gesture evaluation, (2) display a "Keyboard Active" HUD indicator, (3) resume gesture mode only upon a deliberate `THUMBS_UP` gesture executed outside the text field.
+* **Acceptance Criteria**: `KEYBOARD_HANDOFF` entered within $< 1\text{ ms}$ of UIAutomation focus change detection; no gestures fire during active text input.
+* **Verification**: Integration test `test_keyboard_handoff.py`.
+
+#### FR-3.9: Stage 3C Native OS Action Execution & Context Dispatch
 * **Description**: Stage 3C SHALL execute the command via native OS API (`PyAutoGUI` / `win32api`) and simultaneously push an immutable `ActionContext` record to the Layer 4 observation queue.
 * **Acceptance Criteria**: OS execution latency $< 2.0\text{ ms}$; `ActionContext` successfully enqueued.
 * **Verification**: Integration test `test_action_dispatcher.py`.

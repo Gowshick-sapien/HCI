@@ -1,20 +1,20 @@
-# Project Implementation Plan & Engineering Roadmap
+# Project Implementation Plan: High-Level Engineering Overview
 
 ## Project Title
 # Self-Evaluating Adaptive Multimodal Decision Architecture for Human-Computer Interaction
 
 ---
 
-## 1. Project Overview & Formal Research Objectives
+## 1. Project Objective & Formal Research Questions
 
 ### Objective
-To engineer, validate, and benchmark a real-time, non-intrusive Human-Computer Interaction (HCI) framework combining ocular gaze, head pose orientation, and hand gesture tracking. The system dynamically personalizes decision thresholds and modality confidence weights per user via online updates driven by implicit behavioral feedback, continuously monitored and validated by a dedicated **Runtime Assessment Engine (RAE)**.
+To engineer, validate, and benchmark a real-time, non-intrusive Human-Computer Interaction (HCI) framework combining ocular gaze, head pose orientation, and hand gesture tracking. The system uses gaze to resolve **where** to act and gesture to resolve **what** action to perform. Decision policies are continuously personalized via online updates driven by implicit behavioral feedback, autonomously monitored and validated by a dedicated **Runtime Assessment Engine (RAE)**.
 
 ### Research Questions (RQs)
-* **RQ1 (Personalization Effectiveness)**: Does online personalization via implicit feedback significantly reduce interaction errors (False Activation Rate, False Rejection Rate) and Task Completion Time compared to static-rule multimodal fusion baselines?
+* **RQ1 (Personalization Effectiveness)**: Does online personalization via implicit feedback significantly reduce interaction errors (FAR, FRR) and Task Completion Time compared to static-rule multimodal fusion baselines?
 * **RQ2 (Implicit Supervision Viability)**: Can continuous, decay-weighted implicit feedback provide sufficient supervision to steer parameter updates without requiring explicit user labeling?
-* **RQ3 (Runtime Self-Assessment Accuracy)**: Can a dedicated runtime assessment engine reliably determine when an interaction signal is trustworthy, and quantify whether updates improve or degrade interaction quality in real time?
-* **RQ4 (Longitudinal Retention & Robustness)**: Can learned user profiles maintain stability and reduce cold-start friction across multiple sessions, while robustly adapting to drift via sequential testing?
+* **RQ3 (Runtime Self-Assessment Accuracy)**: Can a dedicated RAE reliably determine when an interaction signal is trustworthy and quantify whether updates improve or degrade interaction quality in real time?
+* **RQ4 (Longitudinal Retention & Robustness)**: Can learned user profiles maintain stability and reduce cold-start friction across multiple sessions while robustly adapting to drift?
 
 ---
 
@@ -22,45 +22,58 @@ To engineer, validate, and benchmark a real-time, non-intrusive Human-Computer I
 
 | Deliverable ID | Component Name | Primary Scope & Architectural Responsibilities |
 |---|---|---|
-| **D1** | **Multimodal Perception Layer** | Threaded webcam ingestion (30 FPS), MediaPipe FaceMesh/Iris + Hands, SolvePnP head pose, and Holt-Winters adaptive smoothing filter. |
-| **D2** | **Weighted Decision Engine & Projection** | Vectorized confidence fusion ($S_a(\mathbf{x}) = \mathbf{w}_a^T \mathbf{x}$), exact 1D bisection box-constrained simplex projection solver ($w_i \in [0.05, 0.85]$). |
-| **D3** | **Interactive Calibration Wizard** | 60–90 second 5-phase onboarding capturing gaze affine mapping $\mathbf{M}_{\text{gaze}}$, 95% pose ellipsoid $\mathcal{E}_{\text{head}}$, tempo $\tau_{\text{user}}$, and variance-informed initial weights (`Profile v1`). |
-| **D4** | **Safety Dispatcher & Feedback Observer** | Decoupled Layer 3B (Tier-2 User-Relative Safety Gate) and Layer 4 Temporal State Machine with 5 asynchronous negative sub-detectors and continuous decay confidence $c_{fb}(\Delta t)$. |
-| **D5** | **Runtime Assessment Engine (RAE)** | Dual-engine RAE: 5A Metrics Engine ($AG_t, LV_t, WSI_t, ACI_t, ECE_t, RR, DRT$) + 5B Intelligent Multi-Criteria Decision Validator, plus automated Session Report Generator. |
-| **E1** | **Dual-Scale Adaptive Engine** | Real-time micro-adaptation (per-interaction SGD) + macro-adaptation state machine (`MERGE`, `FREEZE`, `DISCARD`, `RECALIBRATE`) with Wald SPRT drift detection. |
-| **E2** | **State-Aware Explainability HUD** | Low-overhead desktop overlay displaying live modality confidence bars, Tier-2 confirmation ring, and active health state badges (`LEARNING`, `IMPROVING`, `STABLE`, `DRIFTING`, `RECOVERING`). |
-| **E3** | **Empirical Research Dashboard** | Interactive diagnostic dashboard rendering real-time ACI gauge, SPRT trajectory, parameter evolution curves, and automated Latin Square study manager. |
+| **D1** | **Multimodal Perception Pipeline** | Threaded webcam ingestion (30 FPS), FaceMesh/Iris + Hands, SolvePnP head pose, Holt-Winters smoothing, Gaze Dwell Tracker (dwell_ms, stability, anchor), Gesture Vocabulary Engine (13 fixed tokens, sigmoid confidence, FIST guard), Active Modality Arbiter (rolling device flags, arbitration logic). |
+| **D2** | **Command Composer & Simplex Engine** | Two-stage asymmetric Command Composer (Stage A1: spatial target, Stage A2: Tier 0 intent gate, Stage A3: composition), exact 1D bisection box-constrained simplex projector ($w_i \in [0.05, 0.85]$). |
+| **D3** | **Interactive Calibration Wizard** | 60--90s 5-phase onboarding capturing gaze affine map, pose ellipsoid, REST pose (FIST landmark geometry), per-token gesture thresholds, tempo $\tau_\text{user}$, and `Profile v1` with all 7 new ProfileSnapshot fields. |
+| **D4** | **Safety Dispatcher & Feedback Observer** | Stage 3B Tier-1/Tier-2 safety gates (600ms dwell, 3.0s undo hook), Stage 3C UIAutomation keyboard handoff (KEYBOARD_HANDOFF mode), Layer 4 4-window temporal state machine + 5 asynchronous sub-detectors. |
+| **D5** | **Runtime Assessment Engine (RAE)** | Engine 5A: 7 health metrics ($AG_t, LV_t, WSI_t, ACI_t, ECE_t, RR, DRT$) + Engine 5B: 6-rule gatekeeper firewall + automated session report generator. |
+| **E1** | **Dual-Scale Adaptive Engine** | Micro-SGD on expanded parameter set ($\mathbf{w}_\text{spatial}, \theta_a, \alpha, \tau_\text{dwell}, \tau_\text{intent}$, per-gesture thresholds) + macro epoch state machine + Wald SPRT drift detector. |
+| **E2** | **Explainability HUD** | Low-overhead PyQt6 overlay: modality confidence bars, Tier-2 dwell ring, health badges, keyboard handoff indicator. |
+| **E3** | **Research Dashboard** | Live ACI gauge, SPRT trajectory, parameter evolution curves, Latin Square study manager. |
 
 ---
 
-## 3. Four-Week Execution Roadmap Mapped to the Spiral SDLC
+## 3. Phased Engineering Roadmap
 
-The 4-week engineering execution roadmap aligns directly with the **Seven Iterative Research Spirals** defined in the **[Spiral SDLC Methodology Specification (`adaptive-multimodal-hci-sdlc-spiral.md`)](file:///d:/HCI/adaptive-multimodal-hci-sdlc-spiral.md)**:
+This overview maps to the **Seven Research Spirals** detailed in the **[Spiral SDLC Methodology Specification](file:///d:/HCI/adaptive-multimodal-hci-sdlc-spiral.md)**, which carries all per-cycle tasks, risk prototyping strategies, acceptance gates, and codebase module listings.
 
 ```
-┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                   4-WEEK EXECUTION ROADMAP MAPPED TO THE 7 RESEARCH SPIRALS                            │
-├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│  WEEK 1: Perception Core & Mathematical Decision Engine (Spirals 1, 2, 3)                              │
-│  • Spiral 1 (Completed): Research vision, SRS, Architecture, Deliverables, and Repo Structure.         │
-│  • Spiral 2 (Days 1–3): Threaded webcam video pipeline, MediaPipe FaceMesh/Iris + Hands, Holt-Winters. │
-│  • Spiral 3 (Days 4–7): Weighted fusion engine, exact 1D bisection simplex solver, baseline engine.   │
-├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│  WEEK 2: Calibration, Safety Dispatcher & Runtime Assessment Engine (Spirals 3, 4, 5)                  │
-│  • Spiral 3 (Days 8–9): 5-Phase calibration wizard & variance-informed profile synthesis (`Profile v1`)│
-│  • Spiral 4 (Days 10–12): Layer 3B Tier-2 safety gate & Layer 4 4-window feedback observer (5 detectors)│
-│  • Spiral 5 (Days 13–14): Layer 5 dual engines (5A Metrics Engine + 5B 6-Rule Gatekeeper Firewall).    │
-├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│  WEEK 3: Dual-Scale Adaptive Engine & Empirical Pilot Benchmark (Spirals 6, 7)                         │
-│  • Spiral 6 (Days 15–17): Micro SGD + Macro epoch state machine (`MERGE`/`FREEZE`) + Wald SPRT detector│
-│  • Spiral 5 (Days 18–19): Automated Session Diagnostic Report generator & matplotlib convergence charts│
-│  • Spiral 7 (Days 20–21): Within-subjects counterbalanced A/B pilot study execution (N=4–6).          │
-├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│  WEEK 4: Explainability HUD, Dashboard & Academic Dissemination (Spiral 7)                             │
-│  • Spiral 7 (Days 22–24): Low-overhead Explainability HUD overlay (PyQt6) & Research Dashboard (E2, E3)│
-│  • Spiral 7 (Days 25–26): Statistical modeling (Wilcoxon Signed-Rank + Linear Mixed-Effects Models).   │
-│  • Spiral 7 (Days 27–28): Academic conference paper preprint compilation (`paper/main.pdf`), DOC5.    │
-└────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                    HIGH-LEVEL PHASED ENGINEERING ROADMAP                               │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                        │
+│  PHASE 1 — PERCEPTION & VOCABULARY (Spirals 2-3, Deliverable D1)                      │
+│  • Threaded capture + FaceMesh/Iris + SolvePnP + Holt-Winters filter                  │
+│  • Gaze Dwell Tracker (dwell_ms, gaze_stability, gaze_anchor)                          │
+│  • Gesture Vocabulary Engine (13 fixed tokens, FIST guard)                             │
+│  • Active Modality Arbiter (4 device modes, proactive Midas Touch prevention)         │
+│  • Schema bootstrap: PerceptionFrame, GestureClassification, gesture_vocabulary.yaml   │
+│                                                                                        │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│  PHASE 2 — CALIBRATION & DECISION ENGINE (Spiral 3, Deliverables D2, D3)              │
+│  • 5-phase calibration wizard (Phase D: REST pose + gesture thresholds)                │
+│  • Two-stage Command Composer (A1 spatial / A2 Tier 0 / A3 asymmetric composition)    │
+│  • Stage 3B Tier-1/Tier-2 safety + Stage 3C UIAutomation keyboard handoff             │
+│  • 1D bisection simplex projector + Profile v1 with all 7 new ProfileSnapshot fields  │
+│                                                                                        │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│  PHASE 3 — FEEDBACK & ASSESSMENT (Spirals 4-5, Deliverables D4, D5)                   │
+│  • Layer 4: 4-window state machine + 5 sub-detectors (Arbiter complements SD-5)       │
+│  • Layer 5: 7 health metrics + 6-rule gatekeeper + session report generator           │
+│                                                                                        │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│  PHASE 4 — ONLINE LEARNING & DRIFT DETECTION (Spiral 6, Enhancement E1)              │
+│  • Micro-SGD on expanded parameter set + box-simplex projection                        │
+│  • Macro epoch state machine + Wald SPRT drift detector                                │
+│  • Versioned ProfileSnapshot (all 7 new fields persisted)                              │
+│                                                                                        │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│  PHASE 5 — HUD, DASHBOARD & DISSEMINATION (Spiral 7, E2, E3, DOC5)                   │
+│  • PyQt6 Explainability HUD + Research Dashboard                                       │
+│  • Counterbalanced A/B user study execution (N=4-6, Latin Square)                     │
+│  • Wilcoxon + LME statistical analysis + LaTeX conference paper preprint              │
+│                                                                                        │
+└────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -69,16 +82,23 @@ The 4-week engineering execution roadmap aligns directly with the **Seven Iterat
 
 | Test Module | Target Component | Validation Criteria & Invariants Tested |
 |---|---|---|
-| `test_simplex_projection.py` | Layer 6 Optimizer | Verifies $\sum_{i=1}^3 w_{a, i} = 1.0 \pm 10^{-6}$ and $w_{a, i} \in [0.05, 0.85]$ across 10,000 random perturbation vectors. |
-| `test_layer3_decoupling.py` | Layer 3 Decision Sub-stages | Verifies independent execution of Fusion (3A), Safety Reasoning (3B), and Context Dispatcher (3C). |
-| `test_feedback_state_machine.py` | Layer 4 Feedback Observer | Verifies 200ms refractory lockout, continuous exponential decay $c_{fb}(\Delta t)$, and stability expiration at $t > 1.8\text{s}$. |
-| `test_negative_sub_detectors.py` | Layer 4 Sub-detectors | Verifies synthetic event attribution for OS Undo, Directional Reversals, Retries, Dismissals, and Overrides. |
-| `test_runtime_metrics_engine.py` | Layer 5A Metrics Engine | Verifies mathematical correctness of $AG_t, LV_t, WSI_t, ACI_t, ECE_t, RR, DRT$ against analytical ground-truth data. |
-| `test_learning_gatekeeper.py` | Layer 5B Gatekeeper | Validates all 6 rejection rules: sample floor, low confidence, neutral state, macro drift active, contradictions, and sensor noise. |
-| `test_macro_adaptation.py` | Layer 6 Macro Pipeline | Validates macro policy state transitions: `MERGE`, `FREEZE`, `DISCARD`, and `RECALIBRATE`. |
-| `test_uncertainty_propagation.py` | Global Uncertainty Model | Verifies calculation of $C_{\text{update}}$ and effective learning rate scaling $\eta_{\text{eff}} = \eta_0 \cdot C_{\text{update}}$. |
-| `test_profile_snapshot_store.py` | Profile Store | Verifies JSON serialization, deserialization, and immutability across sequential profile versions ($v_k \to v_{k+1}$). |
-| `test_latency_benchmark.py` | End-to-End Pipeline | Verifies end-to-end frame processing completes in $< 33\text{ms}$ on CPU. |
+| `test_gaze_dwell_tracker.py` | Layer 1 Dwell Tracker | `gaze_anchor` only declared at `dwell_ms >= tau_dwell`; overhead `< 0.3 ms`. |
+| `test_gesture_vocabulary.py` | Layer 1B Token Dict | All 13 tokens loadable from YAML; unknown tokens rejected at parse time. |
+| `test_gesture_classifier.py` | Layer 1B Classifier | FIST always `NO_ACTION`; confidence in `[0,1]`; latency `< 0.5 ms`. |
+| `test_modality_arbiter.py` | Modality Arbiter | Correct DEVICE_MODE for all 4 states on synthetic device traces. |
+| `test_command_composer.py` | Layer 3A Composer | Asymmetric $S_a$ correct; self-contained gestures bypass gaze gate entirely. |
+| `test_tier0_intentionality_gate.py` | Layer 3A Tier 0 Gate | Gestures held `< tau_intent` never dispatch any OS action. |
+| `test_simplex_projection.py` | Layer 6 Optimizer | $\sum w_i = 1.0 \pm 10^{-6}$; $w_i \in [0.05, 0.85]$ across 10,000 random vectors. |
+| `test_layer3_decoupling.py` | Layer 3 Sub-stages | Independent execution of Composer (3A), Safety (3B), Dispatcher (3C). |
+| `test_keyboard_handoff.py` | Layer 3C KB Handoff | KEYBOARD_HANDOFF within `< 1 ms` of focus change; zero gestures during text input. |
+| `test_feedback_state_machine.py` | Layer 4 State Machine | 200ms refractory lockout; correct $c_{fb}(t)$ exponential decay. |
+| `test_negative_sub_detectors.py` | Layer 4 Sub-detectors | Attribution correctness for all 5 negative signal types. |
+| `test_runtime_metrics_engine.py` | Layer 5A Metrics | All 7 metrics correct vs. analytical ground truth. |
+| `test_learning_gatekeeper.py` | Layer 5B Gatekeeper | 100% precision rejection on all 6 outlier rule cases. |
+| `test_macro_adaptation.py` | Layer 6 Macro Engine | Deterministic state transitions across all epoch boundaries. |
+| `test_uncertainty_propagation.py` | Global $C_\text{update}$ | $\eta_\text{eff} = \eta_0 \cdot C_\text{update}$ scaling correctness. |
+| `test_profile_snapshot_store.py` | Profile Store | All 7 new fields present; JSON round-trip immutability. |
+| `test_latency_benchmark.py` | End-to-End Pipeline | Full frame cycle `< 33 ms` sustained on CPU. |
 
 ---
 

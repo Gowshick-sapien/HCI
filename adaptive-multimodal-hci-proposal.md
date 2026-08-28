@@ -50,36 +50,54 @@ To maintain strict modularity and eliminate monolithic coupling, the system is o
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                           THE SIX PRINCIPLED ARCHITECTURAL LAYERS                                │
+│                         THE REVISED PRINCIPLED ARCHITECTURAL LAYERS                              │
 ├──────────────────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                                  │
-│  [LAYER 1: PERCEPTION]      ──► Observes:     Extracts raw physical cues from webcam stream      │
-│  [LAYER 2: CALIBRATION]     ──► Personalizes: Bootstraps user anatomy, noise variances & tempo   │
-│  [LAYER 3: DECISION]        ──► Decides:      Fuses confidence, verifies safety & dispatches     │
-│  [LAYER 4: OBSERVATION]     ──► Evaluates:    Monitors post-action user behavior via implicit cues│
-│  [LAYER 5: ASSESSMENT]      ──► Validates:    Computes health metrics & gatekeeps updates        │
-│  [LAYER 6: LEARNING]        ──► Learns:       Executes micro/macro SGD, simplex & profile store  │
+│  [LAYER 1 : PERCEPTION]     ──► Observes:     Extracts raw features & gaze dwell from webcam     │
+│  [LAYER 1B: GESTURE VOCAB]  ──► Classifies:   Translates kinematics into named gesture tokens    │
+│  [ARBITER : MODALITY GATE]  ──► Arbitrates:   Suppresses gesture eval during active device use   │
+│  [LAYER 2 : CALIBRATION]    ──► Personalizes: Bootstraps anatomy, noise, gesture & dwell bases   │
+│  [LAYER 3 : DECISION]       ──► Composes:     Resolves spatial target + intent, dispatches       │
+│  [LAYER 4 : OBSERVATION]    ──► Evaluates:    Monitors post-action user behavior via implicit cues│
+│  [LAYER 5 : ASSESSMENT]     ──► Validates:    Computes health metrics & gatekeeps updates        │
+│  [LAYER 6 : LEARNING]       ──► Learns:       Executes micro/macro SGD, simplex & profile store  │
 │                                                                                                  │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                           CLOSED-LOOP ADAPTIVE FEEDBACK PIPELINE                                 │
+│                      REVISED CLOSED-LOOP ADAPTIVE FEEDBACK PIPELINE                              │
 ├──────────────────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                                  │
 │           ┌─────────────────────────────────────────────────────────────┐                        │
 │           │                   LAYER 1: PERCEPTION                       │                        │
-│           │    (Webcam 30 FPS → FaceMesh/Iris + Hands + SolvePnP)       │                        │
+│           │  (Webcam 30 FPS → FaceMesh/Iris + Hands + SolvePnP +        │                        │
+│           │   Gaze Dwell Tracker → gaze_dwell_ms, gaze_stability)       │                        │
 │           └──────────────────────────────┬──────────────────────────────┘                        │
-│                                          │ Feature Vector x                                      │
+│                                          │ Raw Feature Vector + Dwell Metrics                    │
+│                                          ▼                                                       │
+│           ┌─────────────────────────────────────────────────────────────┐                        │
+│           │             LAYER 1B: GESTURE VOCABULARY ENGINE             │                        │
+│           │  (Kinematics → Named Token: PINCH / FIST / SWIPE / ...      │                        │
+│           │   Output: gesture_token, c_gesture, requires_gaze_target)   │                        │
+│           └──────────────────────────────┬──────────────────────────────┘                        │
+│                                          │ GestureClassification                                 │
+│                                          ▼                                                       │
+│           ┌─────────────────────────────────────────────────────────────┐                        │
+│           │                  ACTIVE MODALITY ARBITER                    │                        │
+│           │  (FIST → NO_ACTION / keyboard_active → SUPPRESS /           │                        │
+│           │   mouse_active → SOFT_REDUCE / clear → GESTURE mode)        │                        │
+│           └──────────────────────────────┬──────────────────────────────┘                        │
+│                                          │ Gated Feature + Gesture Token                         │
 │                                          ▼                                                       │
 │  ┌────────────────────────┐      ┌──────────────────────────────┐                                │
 │  │ VERSIONED PROFILE STORE│─────►│      LAYER 3: DECISION       │                                │
-│  │ (Profile v_k, ACI_t)   │      │ (3A Fusion → 3B Safety Reason│                                │
-│  └───────────▲────────────┘      │  → 3C OS Context Dispatch)   │                                │
-│              │                   └──────────────┬───────────────┘                                │
-│              │ Profile v_k+1                    │ Executed Action Context                        │
+│  │ (Profile v_k, ACI_t)   │      │ (3A Command Composer →       │                                │
+│  └───────────▲────────────┘      │  3B Safety + Tier 0 Gate →   │                                │
+│              │                   │  3C OS Dispatch + KB Handoff) │                                │
+│              │ Profile v_k+1     └──────────────┬───────────────┘                                │
+│              │                                  │ Executed Action Context                        │
 │              │                                  ▼                                                │
 │  ┌───────────┴────────────┐      ┌──────────────────────────────┐                                │
 │  │    LAYER 6: LEARNING   │      │     LAYER 4: OBSERVATION     │                                │
@@ -133,6 +151,21 @@ where $C_{\text{update}}$ directly modulates the effective stochastic gradient d
 ### 5.5 Runtime Assessment Engine & Intelligent Gatekeeper (Layer 5)
 * **Categorized Health Metrics**: Tracks EWMA Adaptation Gain ($AG_t$, $\alpha=0.10$), Sliding Learning Velocity ($LV_t$), Weight Stability Index ($WSI_t$), Adaptation Confidence Index ($ACI_t$), Expected Calibration Error ($ECE_t$), Recovery Rate ($RR$), and Drift Recovery Time ($DRT$).
 * **Intelligent Gatekeeper**: Firewalls the learning engine by evaluating sample count floors ($k \ge 3$), confidence floors ($c_{fb} \ge 0.40$), macro drift lockouts ($S_m \ge 2.89$), contradiction resolution, and sensor signal-to-noise ratios, emitting strict `APPROVE` vs. `REJECT` verdicts.
+
+### 5.6 Gesture Vocabulary Engine (Layer 1B)
+Formalizes the interaction language as a **designer-fixed, version-controlled gesture token dictionary**. Classifies continuous MediaPipe hand kinematics ($d_{\text{pinch}}$, $\mathbf{v}_{\text{wrist}}$, finger extension scores) into 13 named tokens (PINCH, PINCH\_DOUBLE, PINCH\_HOLD, OPEN\_PALM, SWIPE\_LEFT/RIGHT/UP/DOWN, TWO\_FINGER\_SPREAD/PINCH, THUMBS\_UP, FIST, NONE) with recognition confidence scores. Each token carries a `requires_gaze_target` flag that controls whether the Command Composer must resolve a spatial target before dispatching an OS action. The FIST token is the explicit REST state and is the primary Midas Touch prevention mechanism.
+
+### 5.7 Gaze Dwell Tracker (Layer 1 Sub-Module)
+Adds a temporal fixation tracker to the Layer 1 per-frame pipeline. Computes `gaze_dwell_ms` (continuous lock duration on a spatial anchor) and `gaze_stability` (spatial variance over a 150 ms window). A gaze coordinate is only promoted to a valid OS target once it has been stable for at least `profile.gaze_target_dwell_ms` (default 80 ms, personalized per user). This resolves the fundamental ambiguity between reading-gaze and targeting-gaze without requiring any additional hardware.
+
+### 5.8 Active Modality Arbiter & Midas Touch Guard
+A lightweight pre-Layer-3 component that monitors rolling OS device activity flags: `keyboard_active` (800 ms window), `mouse_active` (600 ms window), `mouse_clicking` (300 ms window). Arbitration rules suppress or soft-reduce gesture evaluation when physical devices are in use, converting mouse and keyboard events from reactive post-hoc correction signals (Layer 4) into proactive pre-fire gates. Complements Layer 4 Sub-Detector 5, which remains the residual fallback.
+
+### 5.9 Two-Stage Command Composer (Layer 3A Restructure)
+Replaces the symmetric weighted sum $S_a = \mathbf{w}_a^T \mathbf{x}$ with an architecturally correct asymmetric formulation that respects the distinct roles of the two primary modalities: Stage A1 resolves the spatial target from gaze ("where"); Stage A2 resolves the gesture intent ("what"); Stage A3 composes them as $S_a = \alpha \cdot c_{\text{target}} + (1-\alpha) \cdot c_{\text{gesture}}$ for gaze-targeted actions, or $S_a = c_{\text{gesture}}$ for self-contained swipe/zoom gestures. The composition weight $\alpha \in [0.30, 0.70]$ is a new learned per-user parameter stored in the ProfileSnapshot and adapted by Layer 6 SGD.
+
+### 5.10 Text Input Handoff Protocol (Layer 3C)
+Resolves the text entry gap: when Stage 3C detects (via the Windows UIAutomation accessibility API) that the OS-focused element is a text input field, the system automatically enters `KEYBOARD_HANDOFF` mode. Gesture evaluation is paused, a "Keyboard Active" HUD indicator is displayed, and the user types normally via the physical keyboard. Gesture mode resumes on a deliberate THUMBS\_UP gesture executed outside the text field. This requires no additional hardware and covers all desktop text input scenarios within the research prototype scope.
 
 ---
 

@@ -52,13 +52,13 @@ Every deliverable specified in [Project Deliverables Specification (`adaptive-mu
 | Deliverable ID | Deliverable Name & Scope | Architectural Layer | Target Spiral Cycle | Primary Codebase Modules | Verification Invariant & Suite | Release Bundle Artifact |
 |---|---|---|---|---|---|---|
 | **DOC1–4** | Master Specifications (Proposal, SRS, Architecture, Implementation Plan) | Cross-Cutting | **Spiral 1** | `docs/`, `configs/` | Documentation sign-off & peer review | `docs/` |
-| **D1** | Multimodal Perception & Feature Extraction Pipeline | **Layer 1** | **Spiral 2** | `src/capture/`, `src/perception/` | $\le 20.5\text{ms}$ latency, $\le 1.2\text{px}$ jitter; `test_perception_pipeline.py` | `deliverables/D1_perception_pipeline/` |
-| **D3** | Interactive Calibration & Profile Bootstrapping Wizard | **Layer 2** | **Spiral 3** | `src/calibration/`, `src/storage/` | $\le 90\text{s}$ duration, $\text{RMSE} \le 45\text{px}$; `test_calibration_geometry.py` | `deliverables/D3_calibration_wizard/` |
-| **D2** | Weighted Confidence Fusion & Simplex Projection Engine | **Layer 3A** & **Layer 6** | **Spiral 3** | `src/decision/`, `src/learning/` | Simplex $\sum w_i = 1.0, w_i \in [0.05, 0.85]$; `test_simplex_projection.py` | `deliverables/D2_fusion_engine/` |
-| **D4** | Decoupled Safety Dispatcher & Implicit Feedback Observer | **Layer 3B/3C** & **Layer 4** | **Spiral 4** | `src/decision/`, `src/feedback/` | $600\text{ms}$ dwell, $200\text{ms}$ refractory, 5 detectors; `test_feedback_state_machine.py` | `deliverables/D4_feedback_observer/` |
+| **D1** | Multimodal Perception Pipeline (incl. Layer 1B Gesture Vocabulary Engine & Modality Arbiter) | **Layer 1, Layer 1B, Arbiter** | **Spiral 2** | `src/capture/`, `src/perception/`, `src/gesture/` | $\le 20.5\text{ms}$ latency, FIST guard verified, Arbiter 4-mode correctness; `test_perception_pipeline.py`, `test_gesture_classifier.py`, `test_modality_arbiter.py` | `deliverables/D1_perception_pipeline/` |
+| **D3** | Interactive Calibration & Profile Bootstrapping Wizard (incl. Phase D REST pose) | **Layer 2** | **Spiral 3** | `src/calibration/`, `src/storage/` | $\le 90\text{s}$ duration, $\text{RMSE} \le 45\text{px}$, REST pose captured; `test_calibration_geometry.py` | `deliverables/D3_calibration_wizard/` |
+| **D2** | Two-Stage Command Composer, Simplex Projection Engine & Tier 0 Gate | **Layer 3A & Layer 6 math** | **Spiral 3** | `src/decision/`, `src/learning/` | Simplex $\sum w_i = 1.0, w_i \in [0.05, 0.85]$; Tier 0 drops transient gestures; `test_command_composer.py`, `test_simplex_projection.py`, `test_tier0_intentionality_gate.py` | `deliverables/D2_fusion_engine/` |
+| **D4** | Safety Dispatcher (incl. Keyboard Handoff) & Implicit Feedback Observer | **Layer 3B/3C & Layer 4** | **Spiral 4** | `src/decision/`, `src/feedback/` | $600\text{ms}$ dwell, $200\text{ms}$ refractory, KB handoff $< 1\text{ms}$, 5 detectors; `test_feedback_state_machine.py`, `test_keyboard_handoff.py` | `deliverables/D4_feedback_observer/` |
 | **D5** | Runtime Assessment Engine (RAE) & Evaluation Suite | **Layer 5** | **Spiral 5** | `src/assessment/`, `src/evaluation/` | 7 metrics, 6 gatekeeper rules ($100\%$ outlier rejection); `test_learning_gatekeeper.py` | `deliverables/D5_runtime_assessment/` |
-| **E1** | Dual-Scale Online Adaptive Engine & Wald SPRT Detector | **Layer 6** | **Spiral 6** | `src/learning/`, `src/storage/` | Ambiguity SGD, macro epoch policies, Wald $S_m \ge 2.89$; `test_macro_adaptation.py` | `deliverables/E1_dual_scale_engine/` |
-| **E2** | State-Aware Explainability HUD Overlay | UI / Presentation | **Spiral 7** | `src/ui/explainability_hud.py` | $\le 1.0\text{ms}$ render overhead ($\le 2\%$ CPU); `test_explainability_hud.py` | `deliverables/E2_explainability_hud/` |
+| **E1** | Dual-Scale Online Adaptive Engine & Wald SPRT Detector (expanded parameter set) | **Layer 6** | **Spiral 6** | `src/learning/`, `src/storage/` | SGD on $\mathbf{w}_\text{spatial}, \theta_a, \alpha, \tau_\text{dwell}, \tau_\text{intent}$; Wald $S_m \ge 2.89$; `test_macro_adaptation.py` | `deliverables/E1_dual_scale_engine/` |
+| **E2** | State-Aware Explainability HUD Overlay (incl. KB Handoff indicator) | UI / Presentation | **Spiral 7** | `src/ui/explainability_hud.py` | $\le 1.0\text{ms}$ render overhead ($\le 2\%$ CPU); `test_explainability_hud.py` | `deliverables/E2_explainability_hud/` |
 | **E3** | Interactive Empirical Research Dashboard & Diagnostics | UI / Presentation | **Spiral 7** | `src/ui/research_dashboard.py` | Live telemetry sync, zero frame drops; `test_research_dashboard.py` | `deliverables/E3_research_dashboard/` |
 | **DOC5** | Academic Conference Manuscript & Replication Package | Publication & Study | **Spiral 7** | `paper/`, `evaluation/`, `notebooks/` | LaTeX compilation, Latin Square LME analysis | `paper/main.pdf` |
 
@@ -102,11 +102,11 @@ Every spiral cycle progresses clockwise through four formal quadrants, ensuring 
 ├──────────────────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                                  │
 │  • SPIRAL 1: Research Vision, Theoretical Formulations & Canonical Architecture [COMPLETED]      │
-│  • SPIRAL 2: Core Multimodal Perception & Spatial-Temporal Filtering Prototype (Layer 1, D1)    │
-│  • SPIRAL 3: Calibration Wizard & Mathematical Decision Engine (Layer 2 & 3, D2, D3)             │
-│  • SPIRAL 4: Asynchronous Implicit Feedback Observation Pipeline (Layer 4, D4)                  │
-│  • SPIRAL 5: Dual-Engine Runtime Assessment Engine (RAE) (Layer 5, D5)                           │
-│  • SPIRAL 6: Dual-Scale Online Adaptive Learning & Drift Recovery Engine (Layer 6, E1)           │
+│  • SPIRAL 2: Core Multimodal Perception + Gaze Dwell + Gesture Vocabulary + Modality Arbiter    │
+│  • SPIRAL 3: Calibration Wizard (incl. REST Pose) & Two-Stage Command Composer (L2 & 3, D2, D3) │
+│  • SPIRAL 4: Safety Dispatcher (KB Handoff) & Implicit Feedback Observer (L3B/3C & 4, D4)       │
+│  • SPIRAL 5: Dual-Engine Runtime Assessment Engine (RAE) (Layer 5, D5)                          │
+│  • SPIRAL 6: Dual-Scale Adaptive Engine on Expanded Parameter Set (Layer 6, E1)                 │
 │  • SPIRAL 7: Empirical User Study, Research Dashboard & Academic Dissemination (E2, E3, DOC5)    │
 │                                                                                                  │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
@@ -126,50 +126,64 @@ Every spiral cycle progresses clockwise through four formal quadrants, ensuring 
 
 ---
 
-### 3.2 Spiral 2: Core Multimodal Perception & Feature Extraction Prototype (Layer 1, Deliverable D1)
+### 3.2 Spiral 2: Core Multimodal Perception, Gaze Dwell, Gesture Vocabulary & Modality Arbiter (Layer 1, Layer 1B, Arbiter, Deliverable D1)
 * **Status**: **NEXT EXECUTION TARGET**
-* **Primary Objective**: Ingest raw RGB video at native $30\text{ FPS}$, extract 3D facial landmarks, normalized iris gaze offsets, SolvePnP head pose Euler angles, and 3D hand gestures, applying velocity-scaled Holt-Winters smoothing.
+* **Primary Objective**: Ingest raw RGB video at native $30\text{ FPS}$; extract 3D facial landmarks, normalized iris gaze offsets, SolvePnP head pose Euler angles, and 3D hand kinematics with Holt-Winters smoothing. Extend Layer 1 with the **Gaze Dwell Tracker** sub-module. Build Layer 1B: classify kinematics into 13 named gesture tokens (PINCH family, SWIPE family, FIST REST state) with sigmoid confidence. Deploy the **Active Modality Arbiter** to proactively block Midas Touch before gesture signals reach Layer 3.
 * **Mapped Deliverable**: **`D1` (Multimodal Perception & Feature Extraction Pipeline)**.
-* **Input Dependencies**: `Spiral 1` (`configs/default_config.yaml`, `src/storage/schemas.py`).
+* **Input Dependencies**: `Spiral 1` (`configs/default_config.yaml`, `configs/gesture_vocabulary.yaml`, `src/storage/schemas.py`).
 * **Key Research & Engineering Risks**:
-  * *Risk R2.1*: Computer vision inference latency exceeds $20.5\text{ ms}$, causing frame drops and jitter on standard CPU hardware.
+  * *Risk R2.1*: Computer vision inference latency exceeds $20.5\text{ ms}$, causing frame drops on standard CPU hardware.
   * *Risk R2.2*: Coordinate jitter under static gaze/hand positions degrades confidence scores.
+  * *Risk R2.3*: Ambiguous hand poses cause incorrect gesture token classification, producing false activations (Midas Touch).
+  * *Risk R2.4*: Physical keyboard / mouse use concurrently with gesture causes unintended activations.
 * **Risk Resolution & Prototyping Strategy**:
   * Isolate video capture in a dedicated `threading.Thread` with lock-free double buffering.
   * Benchmark MediaPipe FaceMesh (refine_landmarks=True) and Hands under 640x480 resolution.
   * Tune Holt-Winters dynamic alpha scaling $\alpha_t = \text{clip}(\alpha_0 + \gamma \|\mathbf{v}\|, 0.20, 0.85)$.
+  * Implement FIST guard (all finger curl scores $> 0.80$) as a hard `NO_ACTION` block in the classifier.
+  * Implement Arbiter rolling device flags (keyboard/mouse activity within configurable decay windows).
 * **Codebase Implementation Modules**:
   * `src/capture/video_stream.py`, `src/capture/frame_types.py`
   * `src/perception/face_mesh_extractor.py`, `src/perception/head_pose_estimator.py`
   * `src/perception/hand_pose_extractor.py`, `src/perception/holt_winters_filter.py`
-  * `src/perception/feature_pipeline.py`
+  * `src/perception/gaze_dwell_tracker.py`, `src/perception/feature_pipeline.py`
+  * `src/gesture/gesture_vocabulary.py`, `src/gesture/gesture_classifier.py`
+  * `src/gesture/modality_arbiter.py`
 * **Verification Invariants & Acceptance Gate**:
   * `Invariant D1.1`: Total perception cycle $\le 20.5\text{ ms}$ on 4-core CPU.
   * `Invariant D1.2`: Stationary jitter $\le 1.2\text{ px}$; dynamic tracking lag $\le 15\text{ ms}$.
   * `Invariant D1.3`: Zero-confidence suppression on eye blinks ($\text{EAR} < 0.18$).
+  * `Invariant D1.4`: FIST token always produces `NO_ACTION`; verified on 50 synthetic curled-finger traces.
+  * `Invariant D1.5`: Arbiter DEVICE_MODE correctly set for all 4 states on synthetic device event traces.
+  * `Invariant D1.6`: `gaze_anchor` not declared when `gaze_dwell_ms < tau_dwell`.
 * **Release Artifact**: `deliverables/D1_perception_pipeline/` (verification log + latency benchmark report).
 
 ---
 
-### 3.3 Spiral 3: Calibration Wizard & Mathematical Decision Engine (Layer 2 & 3, Deliverables D2, D3)
-* **Primary Objective**: Implement the 5-phase onboarding wizard (60–90s) bootstrapping user geometry, compute dot-product late fusion $S_a(\mathbf{x}) = \mathbf{w}_a^T \mathbf{x}$, enforce user-relative Tier-2 safety gating with 600ms visual dwell, and integrate the exact 1D bisection box simplex solver.
-* **Mapped Deliverables**: **`D3` (Interactive Calibration Wizard)**, **`D2` (Weighted Confidence Fusion & Simplex Projection Engine)**.
-* **Input Dependencies**: `Spiral 2` (Layer 1 `FeatureVector` output).
+### 3.3 Spiral 3: Calibration Wizard & Two-Stage Command Composer Engine (Layer 2 & 3, Deliverables D2, D3)
+* **Primary Objective**: Implement the 5-phase onboarding wizard (60–90s) including Phase D REST pose capture and per-gesture threshold personalization. Build the two-stage asymmetric Command Composer (Stage A1: spatial target + gaze dwell gate, Stage A2: Tier 0 intentionality gate, Stage A3: asymmetric composition). Integrate exact 1D bisection box simplex solver and UIAutomation keyboard handoff.
+* **Mapped Deliverables**: **`D3` (Interactive Calibration Wizard)**, **`D2` (Command Composer & Simplex Engine)**.
+* **Input Dependencies**: `Spiral 2` (Layer 1 `PerceptionFrame` + Layer 1B `GestureClassification` + Arbiter output).
 * **Key Research & Engineering Risks**:
   * *Risk R3.1*: User calibration drift or high residual error ($\text{RMSE} > 50\text{px}$) produces distorted initial weights.
   * *Risk R3.2*: Destructive Tier-2 actions trigger accidentally without explicit user confirmation.
+  * *Risk R3.3*: Transient/unintentional gesture held briefly causes accidental command dispatch (Midas Touch residual).
+  * *Risk R3.4*: Text input fields capture gesture commands intended for browser/OS navigation.
 * **Risk Resolution & Prototyping Strategy**:
   * Implement 5-point gaze affine transformation with RANSAC outlier rejection.
-  * Decouple Layer 3 into Stage 3A (Fusion), Stage 3B (Safety Gatekeeper), and Stage 3C (Dispatcher).
+  * Implement two-stage composer with Tier 0 gate ($c_\text{gesture} \ge \theta_\text{gesture}$ AND `stable_ms >= tau_intent`).
+  * Decouple Layer 3 into Stage 3A (Command Composer), Stage 3B (Safety Gates), Stage 3C (Dispatcher + KB Handoff).
   * Validate exact 1D bisection solver over $10^6$ synthetic weight vectors.
 * **Codebase Implementation Modules**:
   * `src/calibration/wizard_controller.py`, `src/calibration/geometry_profiler.py`, `src/calibration/tempo_estimator.py`, `src/calibration/variance_weight_init.py`
-  * `src/decision/confidence_fuser.py`, `src/decision/static_baseline_engine.py`, `src/decision/intent_evaluator.py`, `src/decision/safety_gatekeeper.py`, `src/decision/action_dispatcher.py`
+  * `src/decision/command_composer.py`, `src/decision/static_baseline_engine.py`, `src/decision/intent_evaluator.py`, `src/decision/safety_gatekeeper.py`, `src/decision/action_dispatcher.py`
   * `src/learning/simplex_projector.py`
 * **Verification Invariants & Acceptance Gate**:
   * `Invariant D2.1`: $\left|\sum w_i - 1.0\right| \le 10^{-6}$ and $w_i \in [0.05, 0.85]$.
-  * `Invariant D3.2`: Gaze calibration residual $\text{RMSE} \le 45\text{ px}$.
-  * `Invariant D4.2`: Tier-2 commands blocked without uninterrupted $600\text{ ms}$ visual dwell.
+  * `Invariant D2.2`: Transient gestures (held $< \tau_\text{intent}$) never dispatch OS actions.
+  * `Invariant D2.3`: KEYBOARD_HANDOFF entered within $< 1\text{ ms}$ of UIAutomation focus change; zero gestures during active text input.
+  * `Invariant D3.1`: Gaze calibration residual $\text{RMSE} \le 45\text{ px}$.
+  * `Invariant D3.2`: Tier-2 commands blocked without uninterrupted $600\text{ ms}$ visual dwell.
 * **Release Artifacts**: `deliverables/D2_fusion_engine/` and `deliverables/D3_calibration_wizard/`.
 
 ---
@@ -275,25 +289,27 @@ The deliverables integrate cumulatively across the 7 Spirals, ensuring continuou
 │                              CUMULATIVE DELIVERABLE VALUE STREAM                                       │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                                        │
-│  [SPIRAL 1] ──► DOC1–4 & Architectural Blueprints                                                      │
+│  [SPIRAL 1] ──► DOC1–4 & Architectural Blueprints (8-element layer design frozen)                     │
 │                   │                                                                                    │
 │                   ▼                                                                                    │
-│  [SPIRAL 2] ──► D1 (Perception Pipeline: FaceMesh, Pose, Hands, Holt-Winters Filter)                   │
+│  [SPIRAL 2] ──► D1 (Perception: FaceMesh, Pose, Hands, Holt-Winters + Gaze Dwell Tracker +            │
+│                       Gesture Vocabulary Engine (13 tokens, FIST guard) + Modality Arbiter)            │
 │                   │                                                                                    │
 │                   ▼                                                                                    │
-│  [SPIRAL 3] ──► D3 (Calibration Wizard) + D2 (Stage 3A Fusion & Box Simplex Projector)                 │
+│  [SPIRAL 3] ──► D3 (Calibration Wizard incl. Phase D REST Pose) +                                     │
+│                   D2 (Two-Stage Command Composer + Tier 0 Gate + KB Handoff + Simplex)                 │
 │                   │                                                                                    │
 │                   ▼                                                                                    │
-│  [SPIRAL 4] ──► D4 (Stage 3B Safety Dwell Gate + Layer 4 Asynchronous Implicit Feedback Observer)      │
+│  [SPIRAL 4] ──► D4 (Stage 3B Tier-1/Tier-2 Safety + Layer 4 Asynchronous Implicit Feedback Observer)  │
 │                   │                                                                                    │
 │                   ▼                                                                                    │
-│  [SPIRAL 5] ──► D5 (Layer 5 Dual Runtime Assessment Engine: 7 Metrics + 6-Rule Gatekeeper Firewall)    │
+│  [SPIRAL 5] ──► D5 (Layer 5 Dual RAE: 7 Metrics + 6-Rule Gatekeeper Firewall + Session Reports)       │
 │                   │                                                                                    │
 │                   ▼                                                                                    │
-│  [SPIRAL 6] ──► E1 (Layer 6 Dual-Scale Online Learning: Ambiguity SGD + Macro Epochs + Wald SPRT)     │
+│  [SPIRAL 6] ──► E1 (Layer 6 Dual-Scale Learning on Expanded Params + Macro Epochs + Wald SPRT)        │
 │                   │                                                                                    │
 │                   ▼                                                                                    │
-│  [SPIRAL 7] ──► E2 (Explainability HUD) + E3 (Research Dashboard) + DOC5 (LaTeX Conference Preprint)   │
+│  [SPIRAL 7] ──► E2 (Explainability HUD) + E3 (Research Dashboard) + DOC5 (LaTeX Conference Preprint)  │
 │                                                                                                        │
 └────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -306,8 +322,12 @@ The deliverables integrate cumulatively across the 7 Spirals, ensuring continuou
 |---|---|---|---|---|---|
 | **Spiral 2** | **D1** | Perception pipeline latency exceeds 20.5ms on CPU hardware. | Technical / Performance | **HIGH** | Dedicated capture thread + double buffer + Holt-Winters velocity scaling; verified via `test_frame_latency.py`. |
 | **Spiral 2** | **D1** | Eye blinks cause false gaze saccades. | Algorithmic | **MEDIUM** | Instant confidence suppression when $\text{EAR} < 0.18$; verified via `test_face_mesh_extractor.py`. |
+| **Spiral 2** | **D1** | Ambiguous hand pose causes false gesture token (Midas Touch). | Algorithmic / Safety | **CRITICAL** | FIST hard `NO_ACTION` block (Layer 1B) + Arbiter proactive suppression; verified via `test_gesture_classifier.py`, `test_modality_arbiter.py`. |
+| **Spiral 2** | **D1** | Concurrent mouse/keyboard use causes unintended gestures. | Behavioral / UX | **HIGH** | Arbiter rolling device flags (keyboard/mouse windows); verified via `test_modality_arbiter.py`. |
 | **Spiral 3** | **D3** | User calibration residual $\text{RMSE} > 45\text{px}$. | Human Factors / Geometry | **MEDIUM** | Gaze affine solver with RANSAC outlier filtering; verified via `test_calibration_geometry.py`. |
-| **Spiral 3** | **D2** | Destructive Tier-2 action executed accidentally. | Safety / System | **CRITICAL** | User-relative gate $\theta_{\text{tier2}, a}$ + 600ms visual dwell + 3.0s undo hook; verified via `test_safety_gatekeeper.py`. |
+| **Spiral 3** | **D2** | Destructive Tier-2 action executed accidentally. | Safety / System | **CRITICAL** | Tier 0 + user-relative gate $\theta_{\text{tier2}, a}$ + 600ms visual dwell + 3.0s undo hook; verified via `test_safety_gatekeeper.py`. |
+| **Spiral 3** | **D2** | Transient gesture triggers unintended action. | Safety / UX | **HIGH** | Tier 0 intentionality gate (`stable_ms >= tau_intent`); verified via `test_tier0_intentionality_gate.py`. |
+| **Spiral 3** | **D2** | Text input field captures gesture commands. | UX / Correctness | **HIGH** | UIAutomation KB handoff (KEYBOARD_HANDOFF mode); verified via `test_keyboard_handoff.py`. |
 | **Spiral 4** | **D4** | Normal user motor latency misidentified as negative correction. | Behavioral / Temporal | **HIGH** | Strict 200ms Refractory Window lockout; verified via `test_feedback_state_machine.py`. |
 | **Spiral 4** | **D4** | Sub-detectors emit contradictory feedback signals. | Algorithmic | **MEDIUM** | Gatekeeper Rule 5 contradiction check drops conflicting signals; verified via `test_learning_gatekeeper.py`. |
 | **Spiral 5** | **D5** | System overfits to noisy / accidental interaction labels. | Learning / Stability | **CRITICAL** | Engine 5B 6-rule validation firewall ($k \ge 3, c_{fb} \ge 0.40$, SNR check); verified via `test_learning_gatekeeper.py`. |

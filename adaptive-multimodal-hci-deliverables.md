@@ -14,22 +14,23 @@ This document provides the exhaustive, publication-grade specification of all **
 ├──────────────────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                                  │
 │  [CORE ENGINEERING DELIVERABLES (MUST-HAVE)]                                                     │
-│  • Deliverable D1: Multimodal Perception & Feature Extraction Pipeline                           │
-│  • Deliverable D2: Weighted Confidence Fusion & Box-Constrained Simplex Projection Engine       │
+│  • Deliverable D1: Multimodal Perception Pipeline (incl. Layer 1B Gesture Vocabulary Engine      │
+│                    & Active Modality Arbiter)                                                    │
+│  • Deliverable D2: Two-Stage Command Composer & Box-Constrained Simplex Projection Engine        │
 │  • Deliverable D3: Interactive Calibration & User Profile Bootstrapping Wizard                   │
-│  • Deliverable D4: Decoupled Safety Dispatcher & Asynchronous Implicit Feedback Observer         │
+│  • Deliverable D4: Safety Dispatcher (incl. Keyboard Handoff) & Implicit Feedback Observer       │
 │  • Deliverable D5: Runtime Assessment Engine (RAE) & Automated Evaluation Suite                  │
 │                                                                                                  │
 │  [ADVANCED RESEARCH ENHANCEMENTS (RESEARCH GOALS)]                                               │
-│  • Enhancement E1: Dual-Scale Online Adaptive Engine & Hierarchical Wald SPRT Drift Detector     │
-│  • Enhancement E2: State-Aware Explainability HUD Overlay                                        │
+│  • Enhancement E1: Dual-Scale Online Adaptive Engine (Expanded Params) & Wald SPRT Detector      │
+│  • Enhancement E2: State-Aware Explainability HUD Overlay (incl. KB Handoff Indicator)           │
 │  • Enhancement E3: Interactive Empirical Research Dashboard & Latin Square Study Runner          │
 │                                                                                                  │
 │  [DOCUMENTATION & REPLICATION ARTIFACTS]                                                         │
 │  • DOC1: Canonical Project Proposal & Academic Framing                                          │
 │  • DOC2: ISO/IEC/IEEE 29148 Software Requirements Specification (SRS)                            │
 │  • DOC3: System Architecture Specification                                                      │
-│  • DOC4: Project Implementation Plan & 4-Week Engineering Roadmap                                │
+│  • DOC4: Project Implementation Plan (High-Level Overview)                                       │
 │  • SDLC: Spiral SDLC Methodology Specification (adaptive-multimodal-hci-sdlc-spiral.md)          │
 │  • DOC5: Academic Research Paper Preprint & Open-Science Benchmark Dataset                       │
 │                                                                                                  │
@@ -42,10 +43,13 @@ This document provides the exhaustive, publication-grade specification of all **
 
 ---
 
-### 1.1 Deliverable D1: Multimodal Perception & Feature Extraction Pipeline
+### 1.1 Deliverable D1: Multimodal Perception Pipeline (Layer 1, Layer 1B, Modality Arbiter)
 
 #### 1.1.1 Purpose & Scope
-Deliverable **D1** implements the foundational computer vision and spatial-temporal signal processing layer (Layer 1). It captures raw RGB frames from a single consumer webcam at $30\text{ FPS}$, extracts 3D facial mesh landmarks, iris gaze offsets, 3D head pose Euler angles, and 3D hand gesture kinematics, and applies an adaptive velocity-scaled Holt-Winters filter to eliminate landmark jitter.
+Deliverable **D1** implements the full perceptual front-end across three tightly coupled components:
+1. **Layer 1 (Perception)**: Captures raw RGB frames at $30\text{ FPS}$, extracts 3D facial landmarks, iris gaze offsets, head pose Euler angles, and 3D hand kinematics, applies Holt-Winters smoothing, and runs the **Gaze Dwell Tracker** sub-module.
+2. **Layer 1B (Gesture Vocabulary Engine)**: Classifies 21-point hand kinematics into one of 13 fixed named gesture tokens (PINCH family, SWIPE family, FIST, OPEN_PALM, THUMBS_UP, NONE) with sigmoid confidence. FIST is a hard `NO_ACTION` REST state.
+3. **Active Modality Arbiter**: Monitors rolling OS device flags (keyboard/mouse activity) and applies priority-ordered arbitration, suppressing or soft-reducing gesture confidence before signals reach Layer 3.
 
 #### 1.1.2 Module Decomposition & Source Code Artifacts
 ```
@@ -57,9 +61,15 @@ src/
 │   ├── __init__.py
 │   ├── face_mesh_extractor.py       # 468-point FaceMesh & 10-point iris tracking
 │   ├── head_pose_estimator.py       # Levenberg-Marquardt SolvePnP 3D pose solver
-│   ├── hand_pose_extractor.py       # 21-point 3D hand tracking & gesture syntax
+│   ├── hand_pose_extractor.py       # 21-point 3D hand kinematics extractor (no interpretation)
+│   ├── gaze_dwell_tracker.py        # [NEW] Temporal fixation tracker (dwell_ms, stability, anchor)
 │   ├── holt_winters_filter.py       # Adaptive double exponential smoothing filter
-│   └── feature_pipeline.py          # Multimodal feature assembler & covariance estimator
+│   └── feature_pipeline.py          # PerceptionFrame assembler (spatial features + dwell metrics)
+├── gesture/                         # [NEW] Layer 1B + Arbiter
+    ├── __init__.py
+    ├── gesture_vocabulary.py        # Fixed token dictionary loader from gesture_vocabulary.yaml
+    ├── gesture_classifier.py        # Kinematic-to-token sigmoid classifier (FIST guard)
+    └── modality_arbiter.py          # Rolling device flags & arbitration (4 DEVICE_MODEs)
 ```
 
 #### 1.1.3 Mathematical Formulations & Data Contracts
@@ -71,87 +81,99 @@ src/
 3. **Adaptive Holt-Winters Dynamic Smoothing**:
    $$\hat{x}_t = \alpha_t x_t + (1 - \alpha_t)(\hat{x}_{t-1} + b_{t-1}), \quad b_t = \beta (\hat{x}_t - \hat{x}_{t-1}) + (1 - \beta) b_{t-1}$$
    $$\alpha_t = \text{clip}(\alpha_0 + \gamma \|\mathbf{v}_{\text{wrist}}(t)\|, \ 0.20, \ 0.85), \quad \beta = 0.15$$
+4. **Gaze Dwell Stability Score**:
+   $$\text{gaze\_stability}_t = \exp\!\left(-\frac{\sigma^2_{\text{dwell},t}}{R^2}\right), \quad R = 40\text{ px}, \quad \text{window} = 150\text{ ms}$$
+5. **Gesture Token Sigmoid Confidence**:
+   $$c_{\text{gesture}} = \text{sigmoid}\!\left(k_s \cdot (d_{\text{margin}} - d_{\text{threshold}})\right), \quad k_s = 20$$
 
 ```python
 @dataclass(frozen=True)
-class FeatureVector:
+class PerceptionFrame:
     timestamp_ms: float
-    gaze_confidence: float              # s_gaze ∈ [0.0, 1.0]
-    head_confidence: float              # s_head ∈ [0.0, 1.0]
-    hand_confidence: float              # s_hand ∈ [0.0, 1.0]
+    gaze_confidence: float              # s_gaze in [0.0, 1.0]
+    head_confidence: float              # s_head in [0.0, 1.0]
     gaze_screen_xy: Tuple[float, float]
-    head_euler_angles: Tuple[float, float, float] # (yaw, pitch, roll) in degrees
-    pinch_distance: float
-    wrist_velocity: float
-    sensor_covariance_matrix: np.ndarray # 3x3 matrix Σ_sensor
+    head_euler_angles: Tuple[float, float, float]  # (yaw, pitch, roll) in degrees
+    gaze_dwell_ms: float                # [NEW] Continuous fixation duration in ms
+    gaze_stability: float               # [NEW] Variance score in [0, 1]
+    gaze_anchor: Optional[Tuple[float, float]]  # [NEW] Declared screen anchor (or None)
+    sensor_covariance_matrix: np.ndarray  # 2x2 spatial Sigma_sensor
     ambient_illuminance_lux: float
     eye_aspect_ratio: float
+
+@dataclass(frozen=True)
+class GestureClassification:
+    gesture_token: str                  # One of 13 fixed vocabulary tokens
+    c_gesture: float                    # Recognition confidence in [0, 1]
+    requires_gaze_target: bool          # True for PINCH/OPEN_PALM; False for SWIPEs/ZOOM
+    action_intent: str                  # "NO_ACTION" (FIST) or mapped action name
+    stable_duration_ms: float           # Continuous duration this token has been held
 ```
 
 #### 1.1.4 Acceptance Criteria & Verification Invariants
 * **Invariant D1.1**: End-to-end perception latency $\le 20.5\text{ ms}$ on standard 4-core CPU hardware.
 * **Invariant D1.2**: Stationary coordinate jitter $\le 1.2\text{ px}$; dynamic tracking lag $\le 15\text{ ms}$.
-* **Invariant D1.3**: Automatic zero-confidence suppression on eye blinks ($\text{EAR} < 0.18$) and hand tracking occlusions.
+* **Invariant D1.3**: Automatic zero-confidence suppression on eye blinks ($\text{EAR} < 0.18$) and hand occlusions.
+* **Invariant D1.4**: FIST gesture token always emits `action_intent = NO_ACTION`; verified on 50 synthetic curled-finger traces.
+* **Invariant D1.5**: Modality Arbiter emits correct DEVICE_MODE for all 4 states on synthetic OS event traces.
+* **Invariant D1.6**: `gaze_anchor` is `None` whenever `gaze_dwell_ms < profile.gaze_target_dwell_ms`.
 
 ---
 
-### 1.2 Deliverable D2: Weighted Confidence Fusion & Simplex Projection Engine
+### 1.2 Deliverable D2: Two-Stage Command Composer & Simplex Projection Engine
 
 #### 1.2.1 Purpose & Scope
-Deliverable **D2** implements the core mathematical decision engine (Layer 3A). It computes the linear dot-product confidence fusion $S_a(\mathbf{x}) = \mathbf{w}_a^T \mathbf{x}$, compares scores against personalized thresholds $\theta_a$, and embeds the exact 1D bisection box-constrained simplex projection solver ensuring weights strictly satisfy $\sum_{i=1}^3 w_{a, i} = 1.0$ and $w_{a, i} \in [0.05, 0.85]$. It also provides a static-rule baseline engine for counterbalanced A/B benchmarking.
+Deliverable **D2** implements the **two-stage asymmetric Command Composer** (Layer 3A) and the **exact 1D bisection box-constrained simplex projector** (Layer 6 math). The composer replaces the old single-score fusion model:
+- **Stage A1 (Spatial Resolution)**: Computes $c_{\text{target}} = w_{\text{gaze}} \cdot s_{\text{gaze}} + w_{\text{head}} \cdot s_{\text{head}}$ and gates on both spatial confidence and gaze dwell duration.
+- **Stage A2 (Tier 0 Intentionality Gate)**: Requires $c_{\text{gesture}} \ge \theta_{\text{gesture}}$ AND gesture held continuously for $\ge \tau_{\text{intent}}$ ms, preventing transient kinematics from firing.
+- **Stage A3 (Asymmetric Composition)**: Produces $S_a = \alpha \cdot c_{\text{target}} + (1-\alpha) \cdot c_{\text{gesture}}$ for gaze-targeted gestures, or $S_a = c_{\text{gesture}}$ for self-contained gestures (SWIPEs, ZOOM). $\alpha \in [0.30, 0.70]$ is a learned per-user weight.
+It also provides the static-rule baseline engine for counterbalanced A/B benchmarking.
 
 #### 1.2.2 Module Decomposition & Source Code Artifacts
 ```
 src/
 ├── decision/
 │   ├── __init__.py
-│   ├── confidence_fuser.py          # Vectorized dot-product fuser S_a(x) = w_a^T x
+│   ├── command_composer.py          # [NEW] Two-stage composer (A1/A2/A3) + Tier 0 gate
 │   ├── static_baseline_engine.py    # Hardcoded boolean rule baseline for A/B trials
-│   └── intent_evaluator.py          # Candidate threshold evaluation & lockout checks
+│   └── intent_evaluator.py          # Final threshold evaluation & lockout checks
 ├── learning/
-│   ├── __init__.py
-│   └── simplex_projector.py         # Exact 1D dual bisection box-constrained projection
+    ├── __init__.py
+    └── simplex_projector.py         # Exact 1D dual bisection box-constrained projection
 ```
 
 #### 1.2.3 Mathematical Formulations & Exact Algorithms
-1. **Multimodal Late Fusion Score**:
-   $$S_a(\mathbf{x}) = \mathbf{w}_a^T \mathbf{x} = w_{a, \text{gaze}} s_{\text{gaze}} + w_{a, \text{head}} s_{\text{head}} + w_{a, \text{hand}} s_{\text{hand}}$$
-2. **Exact 1D Dual Bisection Box-Constrained Simplex Projection**:
-   $$\text{Minimize } \frac{1}{2} \|\mathbf{w} - \tilde{\mathbf{w}}\|_2^2 \quad \text{subject to } \sum_{i=1}^d w_i = 1.0, \quad l_i \le w_i \le u_i$$
-   Solved via the 1D monotonic piecewise root function:
-   $$f(\mu) = \sum_{i=1}^d \text{clip}(\tilde{w}_i - \mu, \ l_i, \ u_i) - 1.0 = 0$$
+1. **Stage A1 Spatial Targeting Score**:
+   $$c_{\text{target}} = w_{\text{gaze}} \cdot s_{\text{gaze}} + w_{\text{head}} \cdot s_{\text{head}}, \quad \mathbf{w}_{\text{spatial}} \in \Delta^1, \quad w_i \in [0.05, 0.85]$$
+   Gate: $c_{\text{target}} \ge \theta_{\text{target}}$ AND `gaze_dwell_ms >= profile.gaze_target_dwell_ms`.
+2. **Stage A2 Tier 0 Intentionality Gate**:
+   Gate: $c_{\text{gesture}} \ge \theta_{\text{gesture}}$ AND `stable_duration_ms >= profile.intentionality_dwell_ms`.
+3. **Stage A3 Asymmetric Command Composition**:
+   $$S_a = \begin{cases} \alpha \cdot c_{\text{target}} + (1-\alpha) \cdot c_{\text{gesture}} & \text{if requires\_gaze\_target} \\ c_{\text{gesture}} & \text{otherwise} \end{cases}$$
+   Final gate: $S_a \ge \theta_a$.
+4. **Exact 1D Dual Bisection Box-Constrained Simplex Projection** (for $\mathbf{w}_{\text{spatial}}$):
+   $$\text{Minimize } \frac{1}{2} \|\mathbf{w} - \tilde{\mathbf{w}}\|_2^2 \quad \text{subject to } \sum_{i=1}^2 w_i = 1.0, \quad 0.05 \le w_i \le 0.85$$
+   Solved via: $f(\mu) = \sum_{i=1}^2 \text{clip}(\tilde{w}_i - \mu, \ 0.05, \ 0.85) - 1.0 = 0$.
 
 ```python
-def box_constrained_simplex_projection(
-    w_tilde: np.ndarray, 
-    lower_bound: float = 0.05, 
-    upper_bound: float = 0.85, 
-    max_iter: int = 25, 
-    tol: float = 1e-6
-) -> np.ndarray:
-    """Exact 1D bisection root-finding projection onto box-constrained simplex."""
-    mu_min = np.min(w_tilde) - upper_bound
-    mu_max = np.max(w_tilde) - lower_bound
-    
-    for _ in range(max_iter):
-        mu_mid = (mu_min + mu_max) / 2.0
-        w_projected = np.clip(w_tilde - mu_mid, lower_bound, upper_bound)
-        f_val = np.sum(w_projected) - 1.0
-        
-        if abs(f_val) <= tol:
-            return w_projected
-        if f_val > 0:
-            mu_min = mu_mid
-        else:
-            mu_max = mu_mid
-            
-    return np.clip(w_tilde - (mu_min + mu_max) / 2.0, lower_bound, upper_bound)
+@dataclass(frozen=True)
+class ComposedCommand:
+    action_id: str
+    gaze_anchor: Optional[Tuple[float, float]]  # None for self-contained gestures
+    gesture_token: str
+    c_target: float                # Stage A1 spatial confidence
+    c_gesture: float               # Stage A2 gesture confidence
+    S_a: float                     # Stage A3 composite score
+    requires_gaze_target: bool
+    timestamp_ms: float
 ```
 
 #### 1.2.4 Acceptance Criteria & Verification Invariants
-* **Invariant D2.1**: Simplex projection equality holds: $\left|\sum_{i=1}^3 w_{a, i} - 1.0\right| \le 10^{-6}$ across all updates.
-* **Invariant D2.2**: Strict box adherence: $0.05 \le w_{a, i} \le 0.85 \quad \forall i \in \{\text{gaze}, \text{head}, \text{hand}\}$.
-* **Invariant D2.3**: Fusion and projection computation completes in $< 0.5\text{ ms}$.
+* **Invariant D2.1**: Simplex projection equality holds: $\left|\sum_{i=1}^2 w_{a, i} - 1.0\right| \le 10^{-6}$ across all updates.
+* **Invariant D2.2**: Strict box adherence: $0.05 \le w_{a, i} \le 0.85 \quad \forall i \in \{\text{gaze}, \text{head}\}$.
+* **Invariant D2.3**: Stages A1-A3 computation completes in $< 0.2\text{ ms}$.
+* **Invariant D2.4**: Gestures held continuously for $< \tau_{\text{intent}}$ ms are silently dropped before any OS interaction.
+* **Invariant D2.5**: Self-contained gestures (SWIPE, ZOOM) compose with $S_a = c_{\text{gesture}}$ regardless of gaze state.
 
 ---
 
@@ -182,8 +204,12 @@ src/
 │  Phase A: System & Lighting Readiness (0–10s, 1 sample)                │
 │  Phase B: Neutral Head Pose & Motion Range (10–25s, 3 samples)         │
 │  Phase C: 5-Point Ocular Gaze Mapping (25–50s, 5 samples)              │
-│  Phase D: Gesture Kinematics & Tempo Baseline (50–75s, 4 samples)      │
-│  Phase E: Profile Synthesis & Initial Weighting (75–90s, automated)   │
+│  Phase D: Gesture Kinematics, REST Pose & Tempo Baseline (50–75s, 5 samples)│
+│           • Captures user REST pose (FIST landmark geometry, 21 points) │
+│           • Captures per-gesture personalized boundaries                 │
+│             (theta_pinch, theta_vel, theta_spread)                       │
+│           • Measures visual-motor reaction tempo tau_user                 │
+│  Phase E: Profile Synthesis & Initial Weighting (75–90s, automated)    │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -202,17 +228,20 @@ src/
 
 ---
 
-### 1.4 Deliverable D4: Decoupled Safety Dispatcher & Feedback Observer
+### 1.4 Deliverable D4: Safety Dispatcher (incl. Keyboard Handoff) & Asynchronous Implicit Feedback Observer
 
 #### 1.4.1 Purpose & Scope
-Deliverable **D4** implements the decoupled safety execution pipeline (Layer 3B/3C) and the 4-window implicit feedback observation state machine (Layer 4). It enforces user-relative Tier-2 safety gating with 600ms visual dwell confirmation and 3.0s grace-period undo hooking, while asynchronously monitoring five negative sub-detectors to infer supervisory labels without intrusive dialogues.
+Deliverable **D4** implements:
+- **Stage 3B (Safety Reasoning)**: Enforces Tier-1 (instant dispatch) and Tier-2 (user-relative destructive gate + 600ms visual dwell + 3.0s undo hook) classification.
+- **Stage 3C (OS Dispatcher + Keyboard Handoff)**: Executes native OS API calls and checks the UIAutomation accessibility API before each dispatch. When the focused OS element is a text input field, the system enters `KEYBOARD_HANDOFF` mode — pausing gesture evaluation and resuming only on a deliberate `THUMBS_UP` outside the text field.
+- **Layer 4 (Implicit Feedback Observer)**: The 4-window temporal state machine and 5 asynchronous negative sub-detectors infer supervisory labels without intrusive dialogues. The Modality Arbiter (D1) provides proactive pre-fire suppression; the override_detector (Sub-Detector 5) remains as the residual post-hoc fallback.
 
 #### 1.4.2 Module Decomposition & Source Code Artifacts
 ```
 src/
 ├── decision/
-│   ├── safety_gatekeeper.py         # Tier-1 instant / Tier-2 user-relative dwell gate
-│   └── action_dispatcher.py         # OS command execution & ActionContext dispatch
+│   ├── safety_gatekeeper.py         # Stage 3B: Tier-1 instant / Tier-2 user-relative dwell gate
+│   └── action_dispatcher.py         # Stage 3C: OS command execution + UIAutomation KB handoff
 ├── feedback/
 │   ├── __init__.py
 │   ├── temporal_state_machine.py    # 4-window temporal coordinator & ring buffer
@@ -220,7 +249,7 @@ src/
 │   ├── reversal_detector.py         # Directional oppositional continuous command tracker
 │   ├── retry_detector.py            # Rapid duplicate gesture retry counter
 │   ├── dismissal_detector.py        # Immediate window/tab dismissal watcher
-│   └── override_detector.py         # Physical mouse (>800px/s) / keyboard override sensor
+│   └── override_detector.py         # Residual post-hoc physical override fallback sensor
 ```
 
 #### 1.4.3 Mathematical Formulations & State Machine Logic
@@ -258,6 +287,7 @@ class FeedbackEvent:
 * **Invariant D4.1**: Zero false feedback triggers during Window 1 ($[t_0, t_0 + 200\text{ms}]$).
 * **Invariant D4.2**: Destructive Tier-2 commands NEVER execute without uninterrupted $600\text{ ms}$ visual dwell.
 * **Invariant D4.3**: Active undo hook stack captures `Ctrl+Z` reversals within $< 5\text{ ms}$ of occurrence.
+* **Invariant D4.4**: `KEYBOARD_HANDOFF` mode entered within $< 1\text{ ms}$ of UIAutomation focus change to a text input element; zero gesture actions dispatched while in handoff mode.
 
 ---
 

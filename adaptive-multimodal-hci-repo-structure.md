@@ -7,7 +7,7 @@
 
 ### Executive Overview
 This document provides the definitive, publication-grade specification for the **complete repository ecosystem**, encompassing:
-1. **The Six-Layer Core Codebase (`src/`)** aligned with the principled architectural layers.
+1. **The Revised Core Codebase (`src/`)** aligned with the 8-element principled architectural layers (Layer 1, Layer 1B, Modality Arbiter, Layers 2–6).
 2. **The Comprehensive Documentation Suite (`docs/`)** containing academic, technical, user, and API manuals.
 3. **The Academic Publication & LaTeX Preprint Package (`paper/`)** for peer-reviewed conference dissemination.
 4. **The Empirical Evaluation, Instruments & Replication Dataset Package (`evaluation/`, `data/`, `notebooks/`)**.
@@ -44,6 +44,7 @@ adaptive-multimodal-hci/
 │       └── paper-build.yml             # Automated LaTeX compilation to PDF preprint
 ├── configs/
 │   ├── default_config.yaml             # System hyperparameters, thresholds & frame budgets
+│   ├── gesture_vocabulary.yaml         # [NEW] Fixed gesture token dictionary & default thresholds
 │   ├── actions_config.yaml             # Action taxonomy, Tier-1/Tier-2 classification
 │   └── logging_config.yaml             # Telemetry log formatting & rotation rules
 ├── data/                               # Open-Science Datasets & Synthetic Benchmarks
@@ -162,26 +163,32 @@ adaptive-multimodal-hci/
 │   │   ├── __init__.py
 │   │   ├── video_stream.py             # Threaded camera capture worker with ring buffer
 │   │   └── frame_types.py              # RawFrame dataclass & capture configuration
-│   ├── perception/                     # Layer 1: Feature Extraction & Spatial Filtering
+│   ├── perception/                     # Layer 1: Feature Extraction, Spatial Filtering & Gaze Dwell
 │   │   ├── __init__.py
 │   │   ├── face_mesh_extractor.py      # MediaPipe FaceMesh & 10-point refined iris tracker
 │   │   ├── head_pose_estimator.py      # Levenberg-Marquardt SolvePnP 3D pose solver
 │   │   ├── hand_pose_extractor.py      # MediaPipe Hands 21-point 3D kinematic tracker
+│   │   ├── gaze_dwell_tracker.py       # [NEW] Temporal gaze fixation tracker (dwell_ms, stability, anchor)
 │   │   ├── holt_winters_filter.py      # Adaptive velocity-scaled double exponential filter
-│   │   └── feature_pipeline.py         # Perception pipeline coordinator & covariance builder
+│   │   └── feature_pipeline.py         # Perception pipeline coordinator & PerceptionFrame assembler
+│   ├── gesture/                        # [NEW] Layer 1B: Gesture Vocabulary Engine & Modality Arbiter
+│   │   ├── __init__.py
+│   │   ├── gesture_vocabulary.py       # [NEW] Fixed token dict loader from gesture_vocabulary.yaml
+│   │   ├── gesture_classifier.py       # [NEW] Kinematic-to-token classifier with sigmoid confidence
+│   │   └── modality_arbiter.py         # [NEW] Rolling device activity monitor & arbitration logic
 │   ├── calibration/                    # Layer 2: Onboarding & Profile Bootstrapping
 │   │   ├── __init__.py
 │   │   ├── wizard_controller.py        # 5-phase onboarding state coordinator
 │   │   ├── geometry_profiler.py        # Neutral pose 95% ellipsoid & gaze affine solver
 │   │   ├── tempo_estimator.py          # Visual-motor reaction tempo tau_user estimator
 │   │   └── variance_weight_init.py     # Noise-variance inverse weighting synthesizer
-│   ├── decision/                       # Layer 3: Fusion, Safety Reasoning & OS Dispatch
+│   ├── decision/                       # Layer 3: Command Composer, Safety Reasoning & OS Dispatch
 │   │   ├── __init__.py
-│   │   ├── confidence_fuser.py         # Stage 3A: Vectorized linear dot-product fuser
+│   │   ├── command_composer.py         # [NEW] Stage 3A: Two-stage asymmetric command composer
 │   │   ├── static_baseline_engine.py   # Control baseline engine with static boolean rules
 │   │   ├── intent_evaluator.py         # Candidate activation threshold & lockout evaluator
-│   │   ├── safety_gatekeeper.py        # Stage 3B: User-relative Tier-2 dwell confirmation
-│   │   └── action_dispatcher.py        # Stage 3C: Native OS keystroke & mouse executor
+│   │   ├── safety_gatekeeper.py        # Stage 3B: Tier 0/1/2 safety gates & dwell confirmation
+│   │   └── action_dispatcher.py        # Stage 3C: Native OS keystroke & mouse executor + KB handoff
 │   ├── feedback/                       # Layer 4: Asynchronous Implicit Feedback Observation
 │   │   ├── __init__.py
 │   │   ├── temporal_state_machine.py   # 4-window temporal coordinator & ring buffer
@@ -225,7 +232,7 @@ adaptive-multimodal-hci/
 │       ├── __init__.py
 │       ├── geometry.py                 # Affine transforms, Euler angle conversions, 3D math
 │       ├── math_utils.py               # EWMA filters, softmax, sigmoid, numeric clipping
-│       └── system_info.py              # CPU/RAM profiler, OS active window detector
+│       └── system_info.py              # CPU/RAM profiler, OS active window & UIAutomation focus detector
 ├── tests/                              # Comprehensive Automated Test Suite
 │   ├── __init__.py
 │   ├── conftest.py                     # Synthetic landmark fixtures & mock video streams
@@ -234,10 +241,16 @@ adaptive-multimodal-hci/
 │   │   ├── test_face_mesh_extractor.py
 │   │   ├── test_head_pose_estimator.py
 │   │   ├── test_hand_pose_extractor.py
+│   │   ├── test_gaze_dwell_tracker.py
+│   │   ├── test_gesture_vocabulary.py
+│   │   ├── test_modality_arbiter.py
 │   │   ├── test_holt_winters_filter.py
 │   │   ├── test_calibration_geometry.py
 │   │   ├── test_variance_weight_init.py
 │   │   ├── test_confidence_fuser.py
+│   │   ├── test_gesture_classifier.py
+│   │   ├── test_command_composer.py
+│   │   ├── test_tier0_intentionality_gate.py
 │   │   ├── test_simplex_projection.py
 │   │   ├── test_safety_gatekeeper.py
 │   │   ├── test_feedback_state_machine.py
@@ -252,6 +265,7 @@ adaptive-multimodal-hci/
 │   ├── integration/                    # Multi-layer pipeline verification
 │   │   ├── test_perception_pipeline.py
 │   │   ├── test_layer3_decoupling.py
+│   │   ├── test_keyboard_handoff.py
 │   │   ├── test_closed_loop_feedback.py
 │   │   └── test_session_reporting.py
 │   └── benchmarks/                     # Performance, latency & resource budget tests

@@ -1,6 +1,6 @@
 """
 Core Data Schemas and Immutable Contracts.
-Defines strongly-typed dataclasses and enums for all 6 layers of the closed-loop architecture.
+Defines strongly-typed dataclasses and enums for all layers of the 8-element closed-loop architecture.
 """
 
 from __future__ import annotations
@@ -29,9 +29,41 @@ class ActionType(str, Enum):
     ZOOM_IN = "ZOOM_IN"
     ZOOM_OUT = "ZOOM_OUT"
     PRIMARY_CLICK = "PRIMARY_CLICK"
+    RIGHT_CLICK = "RIGHT_CLICK"
+    DOUBLE_CLICK = "DOUBLE_CLICK"
+    MIDDLE_CLICK = "MIDDLE_CLICK"
+    DRAG_START = "DRAG_START"
+    DRAG_DROP = "DRAG_DROP"
+    HOVER = "HOVER"
     CLOSE_ACTIVE_WINDOW = "CLOSE_ACTIVE_WINDOW"
     CONFIRM_SUBMIT = "CONFIRM_SUBMIT"
     NO_ACTION = "NO_ACTION"
+
+
+class DeviceMode(str, Enum):
+    """Modality Arbiter operational arbitration states."""
+    NO_ACTION = "NO_ACTION"
+    KEYBOARD = "KEYBOARD"
+    MOUSE_PRIORITY = "MOUSE_PRIORITY"
+    GESTURE = "GESTURE"
+
+
+class GestureToken(str, Enum):
+    """Fixed 13-token gesture vocabulary for Layer 1B."""
+    PINCH_INDEX = "PINCH_INDEX"
+    PINCH_MIDDLE = "PINCH_MIDDLE"
+    PINCH_RING = "PINCH_RING"
+    PINCH_PINKY = "PINCH_PINKY"
+    PINCH_HOLD = "PINCH_HOLD"
+    PINCH_RELEASE = "PINCH_RELEASE"
+    SWIPE_LEFT = "SWIPE_LEFT"
+    SWIPE_RIGHT = "SWIPE_RIGHT"
+    SWIPE_UP = "SWIPE_UP"
+    SWIPE_DOWN = "SWIPE_DOWN"
+    OPEN_PALM = "OPEN_PALM"
+    FIST = "FIST"
+    THUMBS_UP = "THUMBS_UP"
+    NONE = "NONE"
 
 
 class FeedbackWindow(str, Enum):
@@ -141,18 +173,50 @@ class HandLandmarks:
     gesture_class: str
     confidence: float
     variance: float = 0.05
+    raw_landmarks_21: Optional[List[Tuple[float, float, float]]] = None
+
+
+@dataclass(frozen=True)
+class PerceptionFrame:
+    """Unified Layer 1 spatial-temporal perception output."""
+    timestamp_ms: float
+    frame_id: int
+    eye: EyeLandmarks
+    head: HeadPoseLandmarks
+    hand: HandLandmarks
+    gaze_confidence: float
+    head_confidence: float
+    gaze_screen_xy: Tuple[float, float]
+    head_euler_angles: Tuple[float, float, float]
+    gaze_dwell_ms: float = 0.0
+    gaze_stability: float = 1.0
+    gaze_anchor: Optional[Tuple[float, float]] = None
+    sensor_covariance_matrix: Optional[np.ndarray] = field(default=None, repr=False)
+    ambient_illuminance_lux: float = 50.0
+    eye_aspect_ratio: float = 0.28
+
+
+@dataclass(frozen=True)
+class GestureClassification:
+    """Layer 1B classified gesture token contract."""
+    gesture_token: GestureToken
+    c_gesture: float
+    requires_gaze_target: bool
+    action_intent: str
+    stable_duration_ms: float
+    timestamp_ms: float
 
 
 @dataclass(frozen=True)
 class FeatureVector:
-    """Unified multimodal feature vector x passed across the closed loop."""
+    """Multimodal feature vector wrapper for backward compatibility."""
     timestamp: float
     frame_id: int
     eye: EyeLandmarks
     head: HeadPoseLandmarks
     hand: HandLandmarks
-    scores_array: Tuple[float, float, float] # (s_gaze, s_head, s_hand)
-    variance_array: Tuple[float, float, float] # (var_gaze, var_head, var_hand)
+    scores_array: Tuple[float, float, float]
+    variance_array: Tuple[float, float, float]
     ambient_lux: float = 50.0
     user_distance_mm: float = 600.0
 
@@ -164,8 +228,22 @@ class FeatureVector:
 
 
 @dataclass(frozen=True)
+class ComposedCommand:
+    """Layer 3A composed command output."""
+    action_id: str
+    action_type: ActionType
+    gaze_anchor: Optional[Tuple[float, float]]
+    gesture_token: GestureToken
+    c_target: float
+    c_gesture: float
+    composed_score: float
+    requires_gaze_target: bool
+    timestamp_ms: float
+
+
+@dataclass(frozen=True)
 class ActionCandidate:
-    """Intent candidate evaluated during late fusion."""
+    """Intent candidate evaluated during decision reasoning."""
     action_name: str
     tier: ActionTier
     fused_score: float
@@ -185,7 +263,7 @@ class ActionContext:
     timestamp_t0: float
     target_pid: int
     target_window_title: str
-    feature_snapshot: FeatureVector
+    feature_snapshot: Optional[PerceptionFrame]
     weights_snapshot: Dict[str, float]
     fused_score: float
     threshold: float
@@ -262,6 +340,36 @@ class ProfileSnapshot:
     recalibration_count: int
     baseline_ambient_lux: float
     baseline_user_distance_mm: float
+    # Revised 8-Element Architecture Extensions:
+    alpha_composition_weight: float = 0.50
+    spatial_weights: Dict[str, List[float]] = field(default_factory=lambda: {
+        "PRIMARY_CLICK": [0.60, 0.40],
+        "RIGHT_CLICK": [0.60, 0.40],
+        "DOUBLE_CLICK": [0.60, 0.40],
+        "MIDDLE_CLICK": [0.60, 0.40],
+        "DRAG_START": [0.60, 0.40],
+        "DRAG_DROP": [0.60, 0.40],
+        "HOVER": [0.60, 0.40]
+    })
+    gaze_target_dwell_ms: float = 120.0
+    intentionality_dwell_ms: float = 100.0
+    rest_pose_landmarks: List[List[float]] = field(default_factory=list)
+    gesture_thresholds: Dict[str, float] = field(default_factory=lambda: {
+        "PINCH_INDEX": 0.70,
+        "PINCH_MIDDLE": 0.70,
+        "PINCH_RING": 0.75,
+        "PINCH_PINKY": 0.75,
+        "PINCH_HOLD": 0.70,
+        "PINCH_RELEASE": 0.70,
+        "SWIPE_LEFT": 0.65,
+        "SWIPE_RIGHT": 0.65,
+        "SWIPE_UP": 0.60,
+        "SWIPE_DOWN": 0.60,
+        "OPEN_PALM": 0.65,
+        "FIST": 0.80,
+        "THUMBS_UP": 0.75
+    })
+    keyboard_handoff_active: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
         """Serialize profile snapshot to a standard dictionary."""
@@ -287,7 +395,9 @@ class ProfileSnapshot:
         """Generate default initial bootstrap profile."""
         default_actions = [
             "SCROLL_UP", "SCROLL_DOWN", "NAVIGATE_PREVIOUS", "NAVIGATE_NEXT",
-            "ZOOM_IN", "ZOOM_OUT", "PRIMARY_CLICK", "CLOSE_ACTIVE_WINDOW", "CONFIRM_SUBMIT"
+            "ZOOM_IN", "ZOOM_OUT", "PRIMARY_CLICK", "RIGHT_CLICK", "DOUBLE_CLICK",
+            "MIDDLE_CLICK", "DRAG_START", "DRAG_DROP", "HOVER",
+            "CLOSE_ACTIVE_WINDOW", "CONFIRM_SUBMIT"
         ]
         return cls(
             user_id=user_id,
@@ -303,6 +413,12 @@ class ProfileSnapshot:
                 "ZOOM_IN": [0.20, 0.30, 0.50],
                 "ZOOM_OUT": [0.20, 0.30, 0.50],
                 "PRIMARY_CLICK": [0.35, 0.25, 0.40],
+                "RIGHT_CLICK": [0.35, 0.25, 0.40],
+                "DOUBLE_CLICK": [0.35, 0.25, 0.40],
+                "MIDDLE_CLICK": [0.35, 0.25, 0.40],
+                "DRAG_START": [0.35, 0.25, 0.40],
+                "DRAG_DROP": [0.35, 0.25, 0.40],
+                "HOVER": [0.40, 0.30, 0.30],
                 "CLOSE_ACTIVE_WINDOW": [0.20, 0.30, 0.50],
                 "CONFIRM_SUBMIT": [0.30, 0.30, 0.40]
             },
@@ -314,6 +430,12 @@ class ProfileSnapshot:
                 "ZOOM_IN": 0.65,
                 "ZOOM_OUT": 0.65,
                 "PRIMARY_CLICK": 0.70,
+                "RIGHT_CLICK": 0.70,
+                "DOUBLE_CLICK": 0.75,
+                "MIDDLE_CLICK": 0.75,
+                "DRAG_START": 0.70,
+                "DRAG_DROP": 0.70,
+                "HOVER": 0.65,
                 "CLOSE_ACTIVE_WINDOW": 0.80,
                 "CONFIRM_SUBMIT": 0.75
             },
@@ -345,5 +467,34 @@ class ProfileSnapshot:
             last_recalibration_timestamp=0.0,
             recalibration_count=0,
             baseline_ambient_lux=50.0,
-            baseline_user_distance_mm=600.0
+            baseline_user_distance_mm=600.0,
+            alpha_composition_weight=0.50,
+            spatial_weights={
+                "PRIMARY_CLICK": [0.60, 0.40],
+                "RIGHT_CLICK": [0.60, 0.40],
+                "DOUBLE_CLICK": [0.60, 0.40],
+                "MIDDLE_CLICK": [0.60, 0.40],
+                "DRAG_START": [0.60, 0.40],
+                "DRAG_DROP": [0.60, 0.40],
+                "HOVER": [0.60, 0.40]
+            },
+            gaze_target_dwell_ms=120.0,
+            intentionality_dwell_ms=100.0,
+            rest_pose_landmarks=[],
+            gesture_thresholds={
+                "PINCH_INDEX": 0.70,
+                "PINCH_MIDDLE": 0.70,
+                "PINCH_RING": 0.75,
+                "PINCH_PINKY": 0.75,
+                "PINCH_HOLD": 0.70,
+                "PINCH_RELEASE": 0.70,
+                "SWIPE_LEFT": 0.65,
+                "SWIPE_RIGHT": 0.65,
+                "SWIPE_UP": 0.60,
+                "SWIPE_DOWN": 0.60,
+                "OPEN_PALM": 0.65,
+                "FIST": 0.80,
+                "THUMBS_UP": 0.75
+            },
+            keyboard_handoff_active=False
         )

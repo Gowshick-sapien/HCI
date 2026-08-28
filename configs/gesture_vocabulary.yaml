@@ -1,0 +1,77 @@
+# Gesture Vocabulary Configuration for Layer 1B & Modality Arbiter
+
+gesture_vocabulary:
+  version: "1.0"
+  tokens:
+    PINCH_INDEX:
+      mapped_action: "PRIMARY_CLICK"
+      requires_gaze_target: true
+      default_threshold: 0.70
+      description: "Index finger and thumb pinch gesture"
+    PINCH_MIDDLE:
+      mapped_action: "RIGHT_CLICK"
+      requires_gaze_target: true
+      default_threshold: 0.70
+      description: "Middle finger and thumb pinch gesture"
+    PINCH_RING:
+      mapped_action: "DOUBLE_CLICK"
+      requires_gaze_target: true
+      default_threshold: 0.75
+      description: "Ring finger and thumb pinch gesture"
+    PINCH_PINKY:
+      mapped_action: "MIDDLE_CLICK"
+      requires_gaze_target: true
+      default_threshold: 0.75
+      description: "Pinky finger and thumb pinch gesture"
+    PINCH_HOLD:
+      mapped_action: "DRAG_START"
+      requires_gaze_target: true
+      default_threshold: 0.70
+      description: "Continuous pinch hold"
+    PINCH_RELEASE:
+      mapped_action: "DRAG_DROP"
+      requires_gaze_target: true
+      default_threshold: 0.70
+      description: "Release of active pinch hold"
+    SWIPE_LEFT:
+      mapped_action: "NAVIGATE_PREVIOUS"
+      requires_gaze_target: false
+      default_threshold: 0.65
+      description: "Horizontal hand translation to the left"
+    SWIPE_RIGHT:
+      mapped_action: "NAVIGATE_NEXT"
+      requires_gaze_target: false
+      default_threshold: 0.65
+      description: "Horizontal hand translation to the right"
+    SWIPE_UP:
+      mapped_action: "SCROLL_UP"
+      requires_gaze_target: false
+      default_threshold: 0.60
+      description: "Vertical hand translation upward"
+    SWIPE_DOWN:
+      mapped_action: "SCROLL_DOWN"
+      requires_gaze_target: false
+      default_threshold: 0.60
+      description: "Vertical hand translation downward"
+    OPEN_PALM:
+      mapped_action: "HOVER"
+      requires_gaze_target: true
+      default_threshold: 0.65
+      description: "Fully extended five-finger open palm"
+    FIST:
+      mapped_action: "NO_ACTION"
+      requires_gaze_target: false
+      is_rest_state: true
+      default_threshold: 0.80
+      description: "Closed fist rest state for Midas Touch suppression"
+    THUMBS_UP:
+      mapped_action: "CONFIRM_SUBMIT"
+      requires_gaze_target: false
+      default_threshold: 0.75
+      description: "Upward thumb gesture for explicit confirmation or keyboard handoff exit"
+
+arbiter:
+  device_timeout_keyboard_ms: 1500.0
+  device_timeout_mouse_ms: 800.0
+  soft_reduction_factor: 0.50
+  keyboard_handoff_enabled: true

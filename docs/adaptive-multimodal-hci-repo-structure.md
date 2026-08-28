@@ -58,7 +58,7 @@ adaptive-multimodal-hci/
 │   ├── D1_perception_pipeline/         # Deliverable D1 release bundle, latency proof & sign-off
 │   │   ├── README.md
 │   │   └── verification_report.pdf
-│   ├── D2_fusion_engine/               # Deliverable D2 release bundle, simplex proof & sign-off
+│   ├── D2_fusion_engine/               # Deliverable D2 release bundle, Command Composer proof & sign-off
 │   ├── D3_calibration_wizard/          # Deliverable D3 release bundle & 5-phase validation log
 │   ├── D4_feedback_observer/           # Deliverable D4 release bundle & detector precision matrix
 │   ├── D5_runtime_assessment/          # Deliverable D5 release bundle & sample session reports
@@ -72,10 +72,16 @@ adaptive-multimodal-hci/
 │   ├── adaptive-multimodal-hci-architecture.md        # Technical System Architecture (DOC3)
 │   ├── adaptive-multimodal-hci-repo-structure.md      # Repository Architecture (This Document)
 │   ├── adaptive-multimodal-hci-sdlc-spiral.md         # Spiral SDLC Methodology Specification
-│   ├── adaptive-multimodal-hci-implementation-plan.md # 4-Week Engineering Roadmap (DOC4)
+│   ├── adaptive-multimodal-hci-implementation-plan.md # High-Level Engineering Overview (DOC4)
 │   ├── Proposed_Innovations.md                        # Technical Innovations Deep-Dive
+│   ├── Project_Applications.md                        # Application Domains & Use Cases
+│   ├── literature-review-and-methodology.md           # Theoretical Foundations & Comparative SOTA
+│   ├── literature-review-summary.md                   # Executive Literature Synthesis
+│   ├── Detailed Literature Review.md                  # Exhaustive Academic Literature Corpus
 │   ├── api/                                           # Subsystem API Reference Manuals
 │   │   ├── perception_api.md
+│   │   ├── gesture_api.md                             # [NEW] Gesture Vocabulary & Classifier API
+│   │   ├── arbiter_api.md                             # [NEW] Modality Arbiter API
 │   │   ├── calibration_api.md
 │   │   ├── decision_api.md
 │   │   ├── feedback_api.md
@@ -297,18 +303,21 @@ The documentation suite is structured into four specialized tiers covering acade
 
 ### 2.1 Tier 1: Canonical Project Specifications
 * **`adaptive-multimodal-hci-proposal.md` (DOC1)**: Formal research proposal, scientific thesis, Research Questions (RQ1–RQ4), application domains, and 5-stage validation methodology.
-* **`adaptive-multimodal-hci-srs.md` (DOC2)**: ISO/IEC/IEEE 29148 compliant Software Requirements Specification detailing functional requirements (`FR-1.1` to `FR-9.5`), non-functional budgets, and traceability matrices.
+* **`adaptive-multimodal-hci-srs.md` (DOC2)**: ISO/IEC/IEEE 29148 compliant Software Requirements Specification detailing functional requirements (`FR-1.1` to `FR-9.5`, `FR-1B.x`, `FR-ARB.x`), non-functional budgets, and traceability matrices.
 * **`adaptive-multimodal-hci-deliverables.md`**: Master breakdown of all Core Deliverables (D1–D5), Research Enhancements (E1–E3), and academic replication artifacts.
-* **`adaptive-multimodal-hci-architecture.md` (DOC3)**: Deep technical specification of the 6 principled layers, sequence diagrams, global uncertainty models, and data schemas.
+* **`adaptive-multimodal-hci-architecture.md` (DOC3)**: Deep technical specification of the 8-element principled layers, sequence diagrams, global uncertainty models, and data schemas.
 * **`adaptive-multimodal-hci-repo-structure.md`**: Repository Architecture and codebase layout specification.
-* **`adaptive-multimodal-hci-sdlc-spiral.md`**: Risk-driven 7-spiral development lifecycle mapping Boehm's 4-quadrant framework to the 6-layer architecture and milestone acceptance gates.
-* **`adaptive-multimodal-hci-implementation-plan.md` (DOC4)**: 4-week execution roadmap, daily milestone breakdown, and test verification suite.
+* **`adaptive-multimodal-hci-sdlc-spiral.md`**: Risk-driven 7-spiral development lifecycle mapping Boehm's 4-quadrant framework to the revised architecture and milestone acceptance gates.
+* **`adaptive-multimodal-hci-implementation-plan.md` (DOC4)**: High-level engineering roadmap, deliverable matrix, and test verification suite.
 * **`Proposed_Innovations.md`**: Deep dive into scientific contributions, comparison tables, and state-of-the-art positioning.
+* **`literature-review-and-methodology.md`**: Exhaustive literature synthesis and theoretical foundations.
 
 ### 2.2 Tier 2: Subsystem API Reference Manuals (`docs/api/`)
-* `perception_api.md`: Function signatures, parameters, and return types for FaceMesh, SolvePnP, Hands, and Holt-Winters filter.
-* `calibration_api.md`: API contracts for wizard state transitions, geometry fitting, and profile synthesis.
-* `decision_api.md`: Interfaces for Stage 3A fuser, Stage 3B safety gatekeeper, and Stage 3C action dispatcher.
+* `perception_api.md`: Function signatures, parameters, and return types for FaceMesh, SolvePnP, Hands, Holt-Winters filter, and Gaze Dwell Tracker.
+* `gesture_api.md`: Token dictionary definitions, feature classification schemas, and confidence scoring.
+* `arbiter_api.md`: Rolling device activity monitoring flags and priority arbitration logic contracts.
+* `calibration_api.md`: API contracts for wizard state transitions, geometry fitting, and profile synthesis (incl. Phase D REST pose).
+* `decision_api.md`: Interfaces for Stage 3A Command Composer, Stage 3B safety gatekeeper, and Stage 3C action dispatcher with keyboard handoff.
 * `feedback_api.md`: Contracts for temporal state machine, ring buffer management, and 5 negative sub-detectors.
 * `assessment_api.md`: Interfaces for Engine 5A metrics engine, Engine 5B learning gatekeeper, and report generator.
 * `learning_api.md`: Parameters for micro-SGD updater, simplex bisection solver, macro state machine, and Wald SPRT.
@@ -474,15 +483,15 @@ clean:
 
 | Master Deliverable ID | Deliverable Category | Primary Codebase Assets | Documentation & Paper Assets | Test & Verification Modules |
 |---|---|---|---|---|
-| **D1** | Perception Pipeline | `src/capture/`, `src/perception/` | `docs/api/perception_api.md`, `paper/sections/04_system_architecture.tex` | `tests/unit/test_face_mesh_extractor.py`, `tests/benchmarks/test_frame_latency.py` |
-| **D2** | Decision & Projection | `src/decision/confidence_fuser.py`, `src/learning/simplex_projector.py` | `docs/math/simplex_projection_proof.md`, `paper/sections/05_online_adaptation_engine.tex` | `tests/unit/test_simplex_projection.py`, `tests/unit/test_confidence_fuser.py` |
+| **D1** | Perception Pipeline | `src/capture/`, `src/perception/`, `src/gesture/` | `docs/api/perception_api.md`, `docs/api/gesture_api.md`, `docs/api/arbiter_api.md`, `paper/sections/04_system_architecture.tex` | `tests/unit/test_face_mesh_extractor.py`, `tests/unit/test_gesture_classifier.py`, `tests/unit/test_modality_arbiter.py`, `tests/benchmarks/test_frame_latency.py` |
+| **D2** | Decision & Projection | `src/decision/command_composer.py`, `src/learning/simplex_projector.py` | `docs/math/simplex_projection_proof.md`, `paper/sections/05_online_adaptation_engine.tex` | `tests/unit/test_command_composer.py`, `tests/unit/test_tier0_intentionality_gate.py`, `tests/unit/test_simplex_projection.py` |
 | **D3** | Calibration Wizard | `src/calibration/`, `src/storage/profile_store.py` | `docs/guides/calibration_guide.md`, `docs/api/calibration_api.md` | `tests/unit/test_calibration_geometry.py`, `tests/unit/test_variance_weight_init.py` |
-| **D4** | Safety & Observation | `src/decision/safety_gatekeeper.py`, `src/feedback/` | `docs/api/feedback_api.md`, `paper/sections/04_system_architecture.tex` | `tests/unit/test_feedback_state_machine.py`, `tests/unit/test_negative_sub_detectors.py` |
+| **D4** | Safety & Observation | `src/decision/safety_gatekeeper.py`, `src/decision/action_dispatcher.py`, `src/feedback/` | `docs/api/feedback_api.md`, `paper/sections/04_system_architecture.tex` | `tests/unit/test_feedback_state_machine.py`, `tests/unit/test_negative_sub_detectors.py`, `tests/integration/test_keyboard_handoff.py` |
 | **D5** | Runtime Assessment | `src/assessment/`, `src/evaluation/` | `docs/api/assessment_api.md`, `paper/sections/06_runtime_assessment_engine.tex` | `tests/unit/test_runtime_metrics_engine.py`, `tests/unit/test_learning_gatekeeper.py` |
 | **E1** | Dual-Scale Adaptation | `src/learning/` | `docs/math/wald_sprt_derivation.md`, `paper/sections/05_online_adaptation_engine.tex` | `tests/unit/test_macro_adaptation.py`, `tests/unit/test_wald_sprt_detector.py` |
 | **E2** | Explainability HUD | `src/ui/explainability_hud.py` | `docs/guides/user_manual.md`, `paper/figures/fig1_system_architecture.pdf` | `tests/unit/test_explainability_hud.py`, `media/ui_mockups/` |
 | **E3** | Research Dashboard | `src/ui/research_dashboard.py` | `docs/guides/developer_guide.md`, `notebooks/` | `tests/unit/test_research_dashboard.py`, `evaluation/` |
-| **DOC1–5** | Master Documentation | `docs/`, `paper/` | `adaptive-multimodal-hci-proposal.md`, `adaptive-multimodal-hci-srs.md`, `paper/main.tex` | CI workflow `.github/workflows/paper-build.yml` |
+| **DOC1–5** | Master Documentation | `docs/`, `paper/` | `docs/adaptive-multimodal-hci-proposal.md`, `docs/adaptive-multimodal-hci-srs.md`, `paper/main.tex` | CI workflow `.github/workflows/paper-build.yml` |
 
 ---
 

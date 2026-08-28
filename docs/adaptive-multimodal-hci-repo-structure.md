@@ -92,10 +92,13 @@ adaptive-multimodal-hci/
 │   │   ├── calibration_guide.md                       # 5-phase onboarding walkthrough
 │   │   ├── developer_guide.md                         # Codebase contribution & architecture guide
 │   │   └── deployment_guide.md                        # Packaging, installer & OS permissions
-│   └── math/                                          # Theoretical Formulations & Proofs
-│       ├── simplex_projection_proof.md                # 1D dual bisection convergence proof
-│       ├── wald_sprt_derivation.md                    # Sequential log-likelihood boundary derivation
-│       └── uncertainty_propagation_model.md           # End-to-end C_update formulation
+│   ├── math/                                          # Theoretical Formulations & Proofs
+│   │   ├── simplex_projection_proof.md                # 1D dual bisection convergence proof
+│   │   ├── wald_sprt_derivation.md                    # Sequential log-likelihood boundary derivation
+│   │   └── uncertainty_propagation_model.md           # End-to-end C_update formulation
+│   └── spiral_plans/                                  # Detailed Cycle-by-Cycle Implementation Plans
+│       ├── spiral_2_implementation_plan.md            # Spiral 2: Perception, Dwell & Gesture Engine
+│       └── ...
 ├── evaluation/                         # Empirical Evaluation, Protocols & Instruments
 │   ├── protocols/                      # Human-subject study protocols & IRB materials
 │   │   ├── study_protocol.md                          # Counterbalanced A/B experimental design

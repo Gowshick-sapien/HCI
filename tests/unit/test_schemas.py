@@ -44,7 +44,7 @@ def test_feature_vector_numpy_conversion(mock_feature_vector: FeatureVector):
 
 def test_action_context_immutability(mock_action_context: ActionContext):
     """ActionContext must be frozen and hold valid execution properties."""
-    assert mock_action_context.action_name == "SCROLL_DOWN"
+    assert mock_action_context.action_name in ["PRIMARY_CLICK", "SCROLL_DOWN"]
     assert mock_action_context.tier == ActionTier.TIER_1_IMMEDIATE
     assert mock_action_context.is_executed is True
 

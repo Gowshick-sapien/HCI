@@ -1,6 +1,6 @@
 """
 Pytest Test Fixtures and Synthetic Generators.
-Provides deterministic mock video frames, feature vectors, action contexts, and profile snapshots.
+Provides deterministic mock video frames, feature vectors, action contexts, perception frames, and profile snapshots.
 """
 
 import time
@@ -20,8 +20,11 @@ from src.storage.schemas import (
     FeatureVector,
     FeedbackEvent,
     FeedbackType,
+    GestureClassification,
+    GestureToken,
     HandLandmarks,
     HeadPoseLandmarks,
+    PerceptionFrame,
     ProfileSnapshot,
     RawFrame,
     SystemHealthState,
@@ -75,15 +78,48 @@ def mock_head_landmarks() -> HeadPoseLandmarks:
 @pytest.fixture
 def mock_hand_landmarks() -> HandLandmarks:
     """Returns a synthetic HandLandmarks instance with pinch gesture."""
+    # 21 synthetic landmarks for pinch
+    raw_lms = [(0.5, 0.5, 0.0)] * 21
+    # Index tip and thumb tip close together
+    raw_lms[4] = (0.50, 0.50, 0.0) # thumb tip
+    raw_lms[8] = (0.51, 0.51, 0.0) # index tip
+    
     return HandLandmarks(
         is_detected=True,
-        pinch_distance=0.03,
+        pinch_distance=0.014,
         palm_normal=(0.0, 0.0, -1.0),
         wrist_position=(0.5, 0.7, 0.4),
-        wrist_velocity=12.0,
-        gesture_class="PINCH_HOLD",
+        wrist_velocity=1.2,
+        gesture_class="PINCH_INDEX",
         confidence=0.88,
-        variance=0.04
+        variance=0.04,
+        raw_landmarks_21=raw_lms
+    )
+
+
+@pytest.fixture
+def mock_perception_frame(
+    mock_eye_landmarks: EyeLandmarks,
+    mock_head_landmarks: HeadPoseLandmarks,
+    mock_hand_landmarks: HandLandmarks
+) -> PerceptionFrame:
+    """Returns an immutable PerceptionFrame instance."""
+    return PerceptionFrame(
+        timestamp_ms=time.time() * 1000.0,
+        frame_id=101,
+        eye=mock_eye_landmarks,
+        head=mock_head_landmarks,
+        hand=mock_hand_landmarks,
+        gaze_confidence=0.92,
+        head_confidence=0.95,
+        gaze_screen_xy=(960.0, 540.0),
+        head_euler_angles=(1.5, -2.0, 0.5),
+        gaze_dwell_ms=250.0,
+        gaze_stability=0.94,
+        gaze_anchor=(960.0, 540.0),
+        sensor_covariance_matrix=np.diag([0.03, 0.02]),
+        ambient_illuminance_lux=50.0,
+        eye_aspect_ratio=0.28
     )
 
 
@@ -108,19 +144,19 @@ def mock_feature_vector(
 
 
 @pytest.fixture
-def mock_action_context(mock_feature_vector: FeatureVector) -> ActionContext:
+def mock_action_context(mock_perception_frame: PerceptionFrame) -> ActionContext:
     """Returns an executed ActionContext instance."""
     return ActionContext(
         action_id="act_test_001",
-        action_name="SCROLL_DOWN",
+        action_name="PRIMARY_CLICK",
         tier=ActionTier.TIER_1_IMMEDIATE,
         timestamp_t0=time.time() - 0.5,
         target_pid=1234,
         target_window_title="Browser Window",
-        feature_snapshot=mock_feature_vector,
-        weights_snapshot={"SCROLL_DOWN": 0.40},
+        feature_snapshot=mock_perception_frame,
+        weights_snapshot={"PRIMARY_CLICK": 0.60},
         fused_score=0.78,
-        threshold=0.55,
+        threshold=0.70,
         is_executed=True,
         execution_latency_ms=1.5
     )

@@ -1,14 +1,15 @@
 """
 Interactive Live Perception & Modality Arbitration Diagnostic Visualizer.
 Runs the live webcam perception pipeline with real-time OpenCV HUD overlays,
-allowing manual verification of Gaze Dwell, Gesture Classification, and Modality Arbitration.
+allowing manual verification of Gaze Dwell, Gesture Classification, Modality Arbitration,
+and Personalized Gaze Calibration.
 
 Usage:
     python scripts/verify_perception_live.py
 Controls:
     [q] / [ESC] : Exit visualizer
     [a]         : Toggle physical device arbitration hooks (pynput)
-    [r]         : Reset dwell & gesture tracking state
+    [r]         : Reset tracking & reload calibration profile
 """
 
 import sys
@@ -26,6 +27,7 @@ from src.capture.video_stream import VideoStream
 from src.gesture.gesture_classifier import GestureClassifier
 from src.gesture.modality_arbiter import ModalityArbiter
 from src.perception.feature_pipeline import FeaturePipeline
+from src.storage.profile_manager import ProfileManager
 from src.storage.schemas import DeviceMode, GestureToken, ProfileSnapshot
 
 # Hand landmark skeletal connections
@@ -47,7 +49,8 @@ def draw_hud(
     active_mode: DeviceMode,
     fps: float,
     latency_ms: float,
-    arbitration_enabled: bool
+    arbitration_enabled: bool,
+    is_calibrated: bool
 ) -> np.ndarray:
     """Renders comprehensive HUD telemetry on top of the live video frame."""
     canvas = frame.copy()
@@ -68,8 +71,9 @@ def draw_hud(
     mode_color = mode_colors.get(active_mode, (200, 200, 200))
 
     arb_status = "[ARB: ON]" if arbitration_enabled else "[ARB: OFF]"
-    cv2.putText(canvas, f"MODE: {active_mode.value} {arb_status}", (12, 26), cv2.FONT_HERSHEY_SIMPLEX, 0.60, mode_color, 2)
-    cv2.putText(canvas, f"TOKEN: {arb_gesture.gesture_token.value}", (340, 26), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 255, 255), 2)
+    calib_status = "[CALIBRATED]" if is_calibrated else "[UNCALIBRATED]"
+    cv2.putText(canvas, f"MODE: {active_mode.value} {arb_status} {calib_status}", (12, 26), cv2.FONT_HERSHEY_SIMPLEX, 0.52, mode_color, 2)
+    cv2.putText(canvas, f"TOKEN: {arb_gesture.gesture_token.value}", (380, 26), cv2.FONT_HERSHEY_SIMPLEX, 0.60, (255, 255, 255), 2)
 
     # Telemetry line 2: Intent, Confidence, FPS
     conf_pct = int(arb_gesture.c_gesture * 100)
@@ -84,7 +88,7 @@ def draw_hud(
     cv2.putText(canvas, f"GAZE: ({int(gaze_u)}, {int(gaze_v)}) | DWELL: {dwell_ms}ms | ANCHOR: {anchor_str}", (12, 76), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 220, 120), 1)
 
     # Controls hint banner
-    cv2.putText(canvas, "[Keys: 'q'=Quit | 'a'=Toggle Arbiter | 'r'=Reset]", (12, 94), cv2.FONT_HERSHEY_SIMPLEX, 0.38, (160, 160, 160), 1)
+    cv2.putText(canvas, "[Keys: 'q'=Quit | 'a'=Toggle Arbiter | 'r'=Reload Profile/Reset]", (12, 94), cv2.FONT_HERSHEY_SIMPLEX, 0.38, (160, 160, 160), 1)
 
     # 2. Draw Eye Landmarks on Face
     if perc_frame.eye.confidence > 0.0:
@@ -127,7 +131,6 @@ def draw_hud(
             cv2.circle(canvas, (thumb_px, thumb_py), 16, (0, 255, 255), 2)
 
     # 5. Draw Dynamic Gaze Pointer and Gaze Anchor
-    # In uncalibrated mode, map (u, v) in 1920x1080 screen space directly into viewport
     view_gx = int(np.clip((gaze_u / 1920.0) * w, 20, w - 20))
     view_gy = int(np.clip((gaze_v / 1080.0) * h, 110, h - 20))
 
@@ -157,7 +160,7 @@ def draw_hud(
 def main():
     print("================================================================================")
     print("  LIVE PERCEPTION & MODALITY ARBITRATION DIAGNOSTIC VISUALIZER")
-    print("  Deliverable D1 Manual Verification Tool")
+    print("  Deliverable D1 & D2 Verification Tool")
     print("================================================================================")
     print("Initializing webcam video capture (640x480 @ 30 FPS)...")
 
@@ -172,12 +175,17 @@ def main():
     classifier = GestureClassifier()
     arbiter = ModalityArbiter(enable_pynput_hooks=True)
     arbiter.start_listeners()
-    profile = ProfileSnapshot.create_default()
+
+    profile_mgr = ProfileManager()
+    profile = profile_mgr.load_profile("default_user")
+    is_calibrated = profile.last_recalibration_timestamp > 0.0
+
+    print(f"Loaded Profile for '{profile.user_id}': {'CALIBRATED' if is_calibrated else 'UNCALIBRATED DEFAULT'}")
 
     arbitration_enabled = True
     print("\nVisualizer active. Press 'q' or ESC in the window to quit.")
     print("Press 'a' to toggle physical input arbitration ON/OFF.")
-    print("Press 'r' to reset temporal tracking timers.\n")
+    print("Press 'r' to reload calibration profile and reset tracking.\n")
 
     fps = 30.0
     frame_count = 0
@@ -223,7 +231,8 @@ def main():
                 active_mode,
                 fps,
                 latency_ms,
-                arbitration_enabled
+                arbitration_enabled,
+                is_calibrated
             )
 
             cv2.imshow("Adaptive Multimodal HCI - Deliverable D1 Verification HUD", hud_frame)
@@ -237,7 +246,9 @@ def main():
             elif key == ord('r'):
                 classifier.reset()
                 pipeline.gaze_dwell_tracker.reset()
-                print("Temporal tracking state reset.")
+                profile = profile_mgr.load_profile("default_user")
+                is_calibrated = profile.last_recalibration_timestamp > 0.0
+                print(f"Profile reloaded: {'CALIBRATED' if is_calibrated else 'UNCALIBRATED DEFAULT'}. Tracking reset.")
 
     finally:
         print("\nShutting down stream and ML pipeline...")

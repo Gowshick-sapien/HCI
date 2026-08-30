@@ -124,17 +124,25 @@ class FeaturePipeline:
 
         # 4. Gaze Coordinate Mapping & Spatial Smoothing
         if eye_data is not None and eye_data.confidence > 0.0:
-            if profile and profile.gaze_calibration_matrix:
+            head_yaw = head_data.yaw if head_data else 0.0
+            head_pitch = head_data.pitch if head_data else 0.0
+
+            if profile and profile.gaze_calibration_matrix and profile.last_recalibration_timestamp > 0:
                 M_gaze = np.array(profile.gaze_calibration_matrix, dtype=np.float64)
-                raw_screen_u, raw_screen_v = apply_affine_gaze(M_gaze, eye_data.iris_ratio_x, eye_data.iris_ratio_y)
+                raw_screen_u, raw_screen_v = apply_affine_gaze(
+                    M_gaze,
+                    eye_data.iris_ratio_x,
+                    eye_data.iris_ratio_y,
+                    head_yaw=head_yaw,
+                    head_pitch=head_pitch
+                )
             else:
                 # High-dynamic range baseline gaze mapping with Eye-Head coordination
                 norm_gaze_x = (eye_data.iris_ratio_x - 0.50) * 4.5 + 0.50
                 norm_gaze_y = (eye_data.iris_ratio_y - 0.45) * 4.0 + 0.50
 
-                if head_data is not None:
-                    norm_gaze_x += (head_data.yaw / 20.0) * 0.45
-                    norm_gaze_y -= (head_data.pitch / 18.0) * 0.40
+                norm_gaze_x += (head_yaw / 20.0) * 0.45
+                norm_gaze_y -= (head_pitch / 18.0) * 0.40
 
                 raw_screen_u = norm_gaze_x * self.screen_width
                 raw_screen_v = norm_gaze_y * self.screen_height

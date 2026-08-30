@@ -166,7 +166,9 @@ class FeedbackObserver:
     def reset(self) -> None:
         """Resets all sub-detectors and action queues."""
         self.explicit_classifier.reset()
+        self.implicit_detector.reset()
         self.correlator.reset()
 
 
 __all__ = ["FeedbackObserver"]
+

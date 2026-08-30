@@ -44,6 +44,7 @@ class ImplicitFeedbackDetector:
         self.saccade_escape_radius_px = float(saccade_escape_radius_px)
         self.saccade_escape_window_sec = float(saccade_escape_window_sec)
         self.stability_expiration_sec = float(stability_expiration_sec)
+        self._action_mouse_disp: Dict[str, float] = {}
 
     def evaluate_mouse_takeover(
         self,
@@ -54,6 +55,7 @@ class ImplicitFeedbackDetector:
     ) -> Optional[FeedbackEvent]:
         """
         Detects physical mouse displacement following an executed multimodal action.
+        Supports both single-packet bursts and incremental displacement streams.
         """
         now = current_time if current_time is not None else time.time()
         delta_t = now - action.timestamp_t0
@@ -62,8 +64,12 @@ class ImplicitFeedbackDetector:
         if delta_t < 0.20 or delta_t > self.mouse_takeover_window_sec:
             return None
 
-        disp = math.sqrt(mouse_dx ** 2 + mouse_dy ** 2)
-        if disp >= self.mouse_takeover_radius_px:
+        current_disp = math.sqrt(mouse_dx ** 2 + mouse_dy ** 2)
+        total_disp = self._action_mouse_disp.get(action.action_id, 0.0) + current_disp
+        self._action_mouse_disp[action.action_id] = total_disp
+
+        if total_disp >= self.mouse_takeover_radius_px:
+            self._action_mouse_disp.pop(action.action_id, None)
             conf = float(max(0.60, min(0.95, 1.0 - (delta_t / self.mouse_takeover_window_sec) * 0.40)))
             return FeedbackEvent(
                 feedback_id=f"fb_{uuid.uuid4().hex[:8]}",
@@ -75,7 +81,7 @@ class ImplicitFeedbackDetector:
                 failure_mode=FailureMode.USER_OVERRIDE,
                 severity=FailureSeverity.SEV_2_MINOR,
                 detector_source="IMPLICIT_MOUSE_TAKEOVER",
-                raw_event_payload={"displacement_px": disp, "delta_t": delta_t}
+                raw_event_payload={"displacement_px": total_disp, "delta_t": delta_t}
             )
 
         return None
@@ -209,5 +215,10 @@ class ImplicitFeedbackDetector:
 
         return None
 
+    def reset(self) -> None:
+        """Resets all internal displacement and tracking buffers."""
+        self._action_mouse_disp.clear()
+
 
 __all__ = ["ImplicitFeedbackDetector"]
+

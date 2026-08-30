@@ -65,11 +65,13 @@ This document outlines the formal test protocol for verifying **Deliverable D5 (
 
 | Test Identifier | Description | Verification Type | Status | Operator Signature |
 |---|---|---|---|---|
-| **AUT-D5-01** | Assessment Metrics & Health Classifier | Automated Unit | READY | Automated CI |
-| **AUT-D5-02** | SPRT Gatekeeper Decision Boundaries | Automated Unit | READY | Automated CI |
-| **AUT-D5-03** | Micro-SGD Simplex Projection & Step Bounds | Automated Unit | READY | Automated CI |
-| **AUT-D5-04** | Macro-Adaptation State Machine Policies | Automated Unit | READY | Automated CI |
-| **AUT-D5-05** | Adaptation Pipeline Latency ($\le 2.0\text{ ms}$) | Automated Benchmark | READY | Automated CI |
-| **AUT-D5-06** | Closed-Loop Multi-Layer Integration | Automated Integr | READY | Automated CI |
-| **TC-MAN-01** | Live Micro-Adaptation Weight Shifting | Manual Visual | READY | Operator Review |
-| **TC-MAN-02** | Gatekeeper Noise Rejection | Manual Visual | READY | Operator Review |
+| **AUT-D5-01** | Assessment Metrics & Health Classifier | Automated Unit | PASS | Automated CI (3/3 passed) |
+| **AUT-D5-02** | SPRT Gatekeeper Decision Boundaries | Automated Unit | PASS | Automated CI (3/3 passed) |
+| **AUT-D5-03** | Micro-SGD Simplex Projection & Step Bounds | Automated Unit | PASS | Automated CI (3/3 passed) |
+| **AUT-D5-04** | Macro-Adaptation State Machine Policies | Automated Unit | PASS | Automated CI (3/3 passed) |
+| **AUT-D5-05** | Adaptation Pipeline Latency ($\le 2.0\text{ ms}$) | Automated Benchmark | PASS | Automated CI (0.0954 ms) |
+| **AUT-D5-06** | Closed-Loop Multi-Layer Integration | Automated Integr | PASS | Automated CI (1/1 passed) |
+| **TC-MAN-01** | Live Micro-Adaptation Weight Shifting | Manual Visual | PASS | Operator Verified (SPRT APPROVE -> LEARNING) |
+| **TC-MAN-02** | Gatekeeper Noise Rejection | Manual Visual | PASS | Operator Verified (Isolated error REJECT) |
+
+

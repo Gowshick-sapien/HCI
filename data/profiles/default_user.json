@@ -1,85 +1,15 @@
 {
   "user_id": "default_user",
-  "version_id": 1,
-  "timestamp_epoch": 1788064221.731742,
+  "version_id": 2,
+  "timestamp_epoch": 1788097487.485228,
   "session_id": "session_0",
   "is_session_boundary": true,
   "modality_weights": {
-    "SCROLL_UP": [
-      0.4,
-      0.4,
-      0.2
-    ],
-    "SCROLL_DOWN": [
-      0.4,
-      0.4,
-      0.2
-    ],
-    "NAVIGATE_PREVIOUS": [
-      0.3,
-      0.3,
-      0.4
-    ],
-    "NAVIGATE_NEXT": [
-      0.3,
-      0.3,
-      0.4
-    ],
-    "ZOOM_IN": [
-      0.2,
-      0.3,
-      0.5
-    ],
-    "ZOOM_OUT": [
-      0.2,
-      0.3,
-      0.5
-    ],
-    "PRIMARY_CLICK": [
-      0.35,
-      0.25,
-      0.4
-    ],
-    "RIGHT_CLICK": [
-      0.35,
-      0.25,
-      0.4
-    ],
-    "DOUBLE_CLICK": [
-      0.35,
-      0.25,
-      0.4
-    ],
-    "MIDDLE_CLICK": [
-      0.35,
-      0.25,
-      0.4
-    ],
-    "DRAG_START": [
-      0.35,
-      0.25,
-      0.4
-    ],
-    "DRAG_DROP": [
-      0.35,
-      0.25,
-      0.4
-    ],
-    "HOVER": [
-      0.4,
-      0.3,
-      0.3
-    ],
-    "CLOSE_ACTIVE_WINDOW": [
-      0.2,
-      0.3,
-      0.5
-    ],
-    "CONFIRM_SUBMIT": [
-      0.3,
-      0.3,
-      0.4
-    ]
+    "EYE": 0.2566870218445846,
+    "HEAD": 0.4493713184855629,
+    "HAND": 0.29394165966985253,
+    "GAZE": 0.2566870218445846,
+    "GESTURE": 0.29394165966985253
   },
   "action_thresholds": {
     "SCROLL_UP": 0.55,
@@ -214,12 +144,12 @@
       "count": 0
     }
   },
-  "adaptation_confidence_index": 0.0,
-  "weight_stability_index": 0.0,
-  "expected_calibration_error": 0.0,
-  "cumulative_adaptation_gain": 0.0,
-  "total_interactions_seen": 0,
-  "total_updates_approved": 0,
+  "adaptation_confidence_index": 0.8573529210562609,
+  "weight_stability_index": 1.0,
+  "expected_calibration_error": 0.047385643270821176,
+  "cumulative_adaptation_gain": -0.008508701808617108,
+  "total_interactions_seen": 106,
+  "total_updates_approved": 1,
   "total_updates_rejected": 0,
   "failure_counts_by_taxonomy": {
     "FALSE_ACTIVATION": 0,

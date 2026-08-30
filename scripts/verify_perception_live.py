@@ -1,7 +1,7 @@
 """
 Interactive Live Perception, Fusion & Supervisory Feedback Diagnostic Visualizer.
-High-performance PySide6 desktop application using timer-driven double buffering
-to guarantee 100% responsive, non-blocking 60 FPS UI rendering on Windows.
+High-performance PySide6 desktop application integrating Layer 1 Perception, Layer 2 Calibration,
+Stage 3A Fusion, Layer 4 Supervisory Feedback, and Layer 5 Dual-Scale Dynamic Adaptation.
 
 Usage:
     python scripts/verify_perception_live.py
@@ -27,9 +27,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import cv2
 import numpy as np
 from PySide6.QtCore import QPointF, QRectF, QSize, Qt, QTimer
-from PySide6.QtGui import QBrush, QColor, QFont, QImage, QPainter, QPen, QPixmap
+from PySide6.QtGui import QBrush, QColor, QCursor, QFont, QImage, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QApplication, QMainWindow, QWidget
 
+from src.adaptation.coordinator import AdaptationCoordinator
 from src.capture.frame_types import CameraConfig, RawFrame
 from src.capture.video_stream import VideoStream
 from src.feedback.observer import FeedbackObserver
@@ -43,14 +44,19 @@ from src.storage.schemas import (
     ActionContext,
     ActionTier,
     ActionType,
+    AssessmentMetrics,
     ComposedCommand,
     DeviceMode,
     FeedbackEvent,
     FeedbackType,
+    GatekeeperDecision,
+    GatekeeperVerdict,
     GestureClassification,
     GestureToken,
+    MacroPolicy,
     PerceptionFrame,
     ProfileSnapshot,
+    SystemHealthState,
 )
 
 # Hand landmark skeletal connections (21 landmarks)
@@ -67,7 +73,7 @@ HAND_CONNECTIONS = [
 class PerceptionWorker(threading.Thread):
     """
     Dedicated background worker thread that executes video capture, ML inference,
-    multimodal fusion, and Layer 4 feedback observation without touching the Qt GUI thread.
+    multimodal fusion, Layer 4 feedback observation, and Layer 5 dynamic adaptation.
     """
 
     def __init__(self, camera_id: int = 0) -> None:
@@ -88,14 +94,20 @@ class PerceptionWorker(threading.Thread):
         self._pending_keys: Deque[Tuple[str, bool]] = collections.deque(maxlen=20)
         self._reload_profile_requested: bool = False
 
-        # Feedback & Persistence Subsystems
+        # Subsystems
         self.telemetry_logger = FeedbackTelemetryLogger()
         self.feedback_observer = FeedbackObserver(telemetry_logger=self.telemetry_logger)
+        self.coordinator = AdaptationCoordinator(user_id="default_user")
 
         def on_feedback_received(event: FeedbackEvent):
             with self._lock:
                 self.latest_feedback_event = event
-            print(f"[FEEDBACK] {event.feedback_type.value} | Source: {event.detector_source} | Mode: {event.failure_mode.value} (dt: {event.latency_delta_t:.2f}s)")
+            # Feed into Layer 5 Adaptation Coordinator
+            metrics, dec, pol, w = self.coordinator.process_feedback_event(
+                feedback=event,
+                ambient_lux=50.0
+            )
+            print(f"[FEEDBACK] {event.feedback_type.value} | {event.detector_source} -> {event.failure_mode.value} (dt: {event.latency_delta_t:.2f}s) | Gatekeeper: {dec.verdict.value} | Health: {metrics.health_state.value} | Weights: [EYE:{w['EYE']:.2f}, HEAD:{w['HEAD']:.2f}, HAND:{w['HAND']:.2f}]")
 
         self.feedback_observer.register_feedback_listener(on_feedback_received)
 
@@ -140,7 +152,8 @@ class PerceptionWorker(threading.Thread):
                     classifier.reset()
                     pipeline.gaze_dwell_tracker.reset()
                     self.feedback_observer.reset()
-                    print("Perception pipeline and feedback observer reset.")
+                    self.coordinator.reset()
+                    print("Perception pipeline and adaptation coordinator reset.")
 
                 raw_frame = stream.read_latest_frame(wait_timeout_sec=0.05)
                 if raw_frame is None or raw_frame.image is None:
@@ -163,6 +176,7 @@ class PerceptionWorker(threading.Thread):
 
                 # Register executed action with Layer 4 FeedbackObserver upon state transition
                 if composed_cmd.action_type != ActionType.NO_ACTION and (last_executed_cmd is None or last_executed_cmd.action_type != composed_cmd.action_type):
+                    current_w = self.coordinator.get_active_weights()
                     action_ctx = ActionContext(
                         action_id=composed_cmd.action_id,
                         action_name=composed_cmd.action_type.value,
@@ -171,7 +185,7 @@ class PerceptionWorker(threading.Thread):
                         target_pid=os.getpid(),
                         target_window_title="Diagnostic Visualizer",
                         feature_snapshot=perc_frame,
-                        weights_snapshot={"GAZE": 0.5, "GESTURE": 0.5},
+                        weights_snapshot=current_w,
                         fused_score=composed_cmd.composed_score,
                         threshold=0.70,
                         is_executed=True
@@ -181,7 +195,19 @@ class PerceptionWorker(threading.Thread):
                 elif composed_cmd.action_type == ActionType.NO_ACTION:
                     last_executed_cmd = None
 
-                # 5. Layer 4 Feedback Observer: Process pending input queues
+                # 5. Layer 4 Feedback Observer: Global OS Cursor Tracking + Queues
+                try:
+                    cursor_pt = QCursor.pos()
+                    cur_gx, cur_gy = int(cursor_pt.x()), int(cursor_pt.y())
+                    if last_global_cursor is not None:
+                        gdx = cur_gx - last_global_cursor[0]
+                        gdy = cur_gy - last_global_cursor[1]
+                        if abs(gdx) > 0 or abs(gdy) > 0:
+                            self.feedback_observer.on_mouse_movement(float(gdx), float(gdy))
+                    last_global_cursor = (cur_gx, cur_gy)
+                except Exception:
+                    pass
+
                 while self._pending_mouse_moves:
                     mdx, mdy = self._pending_mouse_moves.popleft()
                     self.feedback_observer.on_mouse_movement(mdx, mdy)
@@ -238,20 +264,33 @@ class PerceptionWorker(threading.Thread):
                 qimg = QImage(rgb_arr.data, w_img, h_img, 3 * w_img, QImage.Format.Format_RGB888).copy()
 
                 # Format Telemetry Lines
+                active_weights = self.coordinator.get_active_weights()
+                metrics = self.coordinator.get_latest_metrics()
                 cmd_name = composed_cmd.action_type.value if composed_cmd else "NO_ACTION"
                 conf_pct = int(arb_gesture.c_gesture * 100)
                 calib_tag = "[CALIBRATED]" if profile.last_recalibration_timestamp > 0.0 else "[UNCALIBRATED]"
 
-                line1 = f"MODE: GESTURE {calib_tag} | TOKEN: {arb_gesture.gesture_token.value}"
-                line2 = f"ACTION: {cmd_name} | CONF: {conf_pct}% | FPS: {self.actual_fps:.0f} ({latency_ms:.1f}ms)"
+                line1 = f"MODE: GESTURE {calib_tag} | HEALTH: [{metrics.health_state.value}] | FPS: {self.actual_fps:.0f}"
+                line2 = f"ACTION: {cmd_name} | WEIGHTS: [EYE: {active_weights['EYE']:.2f} | HEAD: {active_weights['HEAD']:.2f} | HAND: {active_weights['HAND']:.2f}]"
                 anc_str = f"({int(perc_frame.gaze_anchor[0])}, {int(perc_frame.gaze_anchor[1])}) [LOCKED]" if perc_frame.gaze_anchor else "[SEARCHING...]"
                 line3 = f"GAZE: ({int(perc_frame.gaze_screen_xy[0])}, {int(perc_frame.gaze_screen_xy[1])}) | DWELL: {int(perc_frame.gaze_dwell_ms)}ms | ANCHOR: {anc_str}"
+
+                # Health state dynamic color
+                health_color = (0, 255, 200)
+                if metrics.health_state == SystemHealthState.LEARNING:
+                    health_color = (255, 220, 0)
+                elif metrics.health_state == SystemHealthState.STABLE:
+                    health_color = (0, 255, 120)
+                elif metrics.health_state == SystemHealthState.DRIFTING:
+                    health_color = (255, 80, 80)
+                elif metrics.health_state == SystemHealthState.IMPROVING:
+                    health_color = (100, 220, 255)
 
                 # Update shared GUI state
                 with self._lock:
                     self.latest_annotated_image = qimg
                     self.latest_telemetry_lines = [
-                        (line1, (0, 255, 200)),
+                        (line1, health_color),
                         (line2, (0, 255, 120) if cmd_name != "NO_ACTION" else (220, 220, 220)),
                         (line3, (255, 220, 120))
                     ]
@@ -369,14 +408,14 @@ class LiveVisualizerWindow(QMainWindow):
         self.render_timer.start(33) # 33ms -> 30 FPS
 
         print("================================================================================")
-        print("  LIVE PERCEPTION, FUSION & SUPERVISORY FEEDBACK DIAGNOSTIC VISUALIZER")
-        print("  Deliverables D1, D2, D3 & D4 Native Desktop Tool")
+        print("  LIVE PERCEPTION, FUSION, FEEDBACK & ADAPTATION DIAGNOSTIC VISUALIZER")
+        print("  Deliverables D1, D2, D3, D4 & D5 Native Desktop Tool")
         print("================================================================================")
         print(f"Loaded Profile for '{self.user_id}': CALIBRATED")
         print(f"Feedback Event Log Stream: {self.worker.telemetry_logger.log_file_path.resolve()}\n")
         print("Visualizer active. Press 'q' or ESC in the window to quit.")
         print("Perform an index pinch with locked gaze anchor to execute an action.")
-        print("Then move your physical mouse or press 'z' to observe real-time feedback logging!\n")
+        print("Then move your physical mouse or press 'z' to observe real-time feedback & adaptation!\n")
 
     def keyPressEvent(self, event) -> None:
         if event.key() in (Qt.Key.Key_Q, Qt.Key.Key_Escape):

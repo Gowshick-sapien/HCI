@@ -6,10 +6,11 @@ proactively suppressing gesture evaluation during manual typing and mouse naviga
 
 from __future__ import annotations
 
+import collections
 import logging
 import threading
 import time
-from typing import Optional, Tuple
+from typing import Callable, Deque, List, Optional, Tuple
 
 from src.storage.schemas import DeviceMode, GestureClassification, GestureToken
 
@@ -27,26 +28,47 @@ class ModalityArbiter:
         keyboard_timeout_ms: float = 1500.0,
         mouse_timeout_ms: float = 800.0,
         soft_reduction_factor: float = 0.50,
-        enable_pynput_hooks: bool = True
+        enable_pynput_hooks: bool = True,
+        **kwargs
     ) -> None:
-        self.keyboard_timeout_ms = float(keyboard_timeout_ms)
-        self.mouse_timeout_ms = float(mouse_timeout_ms)
+        self.keyboard_lockout_ms = float(kwargs.get("keyboard_lockout_ms", keyboard_timeout_ms))
+        self.mouse_lockout_ms = float(kwargs.get("mouse_lockout_ms", mouse_timeout_ms))
         self.soft_reduction_factor = float(soft_reduction_factor)
         self.enable_pynput_hooks = enable_pynput_hooks
 
-        # Last activity timestamps (in milliseconds)
         self._last_keyboard_timestamp_ms: float = 0.0
         self._last_mouse_timestamp_ms: float = 0.0
         self._prev_mouse_xy: Optional[Tuple[int, int]] = None
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
 
-        # Listener objects
         self._keyboard_listener = None
         self._mouse_listener = None
         self._is_listening: bool = False
 
+        self._is_ctrl_down: bool = False
+        self._accum_mouse_dx: float = 0.0
+        self._accum_mouse_dy: float = 0.0
+        self._pending_keys: Deque[Tuple[str, bool]] = collections.deque(maxlen=30)
+
+    def pop_accumulated_mouse_delta(self) -> Tuple[float, float]:
+        """Returns and resets accumulated physical mouse displacement since last check."""
+        with self._lock:
+            dx, dy = self._accum_mouse_dx, self._accum_mouse_dy
+            self._accum_mouse_dx = 0.0
+            self._accum_mouse_dy = 0.0
+            return dx, dy
+
+    def pop_pending_key_events(self) -> List[Tuple[str, bool]]:
+        """Returns and clears all pending key events recorded by the hook."""
+        with self._lock:
+            keys = list(self._pending_keys)
+            self._pending_keys.clear()
+            return keys
+
     def start_listeners(self) -> bool:
-        """Starts asynchronous non-blocking background input listeners if enabled."""
+        """
+        Starts pynput background threads for mouse and keyboard monitoring.
+        """
         if not self.enable_pynput_hooks or self._is_listening:
             return True
 
@@ -56,6 +78,18 @@ class ModalityArbiter:
             def on_key_press(key):
                 with self._lock:
                     self._last_keyboard_timestamp_ms = time.time() * 1000.0
+                    try:
+                        if key in (keyboard.Key.ctrl_l, keyboard.Key.ctrl_r):
+                            self._is_ctrl_down = True
+                        key_name = getattr(key, 'char', None) or str(key)
+                        self._pending_keys.append((key_name, self._is_ctrl_down))
+                    except Exception:
+                        pass
+
+            def on_key_release(key):
+                with self._lock:
+                    if key in (keyboard.Key.ctrl_l, keyboard.Key.ctrl_r):
+                        self._is_ctrl_down = False
 
             def on_mouse_move(x, y):
                 with self._lock:
@@ -66,6 +100,8 @@ class ModalityArbiter:
                         if (dx * dx + dy * dy) >= 16:
                             self._last_mouse_timestamp_ms = time.time() * 1000.0
                             self._prev_mouse_xy = (x, y)
+                            self._accum_mouse_dx += dx
+                            self._accum_mouse_dy += dy
                     else:
                         self._prev_mouse_xy = (x, y)
 
@@ -74,7 +110,7 @@ class ModalityArbiter:
                     with self._lock:
                         self._last_mouse_timestamp_ms = time.time() * 1000.0
 
-            self._keyboard_listener = keyboard.Listener(on_press=on_key_press)
+            self._keyboard_listener = keyboard.Listener(on_press=on_key_press, on_release=on_key_release)
             self._mouse_listener = mouse.Listener(on_move=on_mouse_move, on_click=on_mouse_click)
 
             self._keyboard_listener.daemon = True
@@ -119,86 +155,58 @@ class ModalityArbiter:
             elif device.upper() == "MOUSE":
                 self._last_mouse_timestamp_ms = t
 
-    def get_current_device_mode(
-        self,
-        current_gesture: Optional[GestureToken] = None,
-        timestamp_ms: Optional[float] = None
-    ) -> DeviceMode:
-        """
-        Evaluates current physical device mode based on priority rules.
-        """
-        t_now = timestamp_ms if timestamp_ms is not None else (time.time() * 1000.0)
-
-        # 1. Hard FIST REST Guard overrides everything to NO_ACTION
-        if current_gesture == GestureToken.FIST:
-            return DeviceMode.NO_ACTION
-
-        with self._lock:
-            dt_key = t_now - self._last_keyboard_timestamp_ms
-            dt_mouse = t_now - self._last_mouse_timestamp_ms
-
-        # 2. Priority 1: Physical Keyboard Active
-        if dt_key >= 0.0 and dt_key <= self.keyboard_timeout_ms:
-            return DeviceMode.KEYBOARD
-
-        # 3. Priority 2: Physical Mouse Active
-        if dt_mouse >= 0.0 and dt_mouse <= self.mouse_timeout_ms:
-            return DeviceMode.MOUSE_PRIORITY
-
-        # 4. Priority 3: Multimodal Gesture Uninhibited
-        return DeviceMode.GESTURE
-
     def arbitrate(
         self,
         gesture: GestureClassification,
         timestamp_ms: Optional[float] = None
     ) -> Tuple[GestureClassification, DeviceMode]:
         """
-        Applies arbitration rules to the incoming gesture classification.
-
-        Returns:
-            (arbitrated_gesture, active_device_mode)
+        Arbitrates active input device modality and filters gestures.
         """
-        mode = self.get_current_device_mode(
-            current_gesture=gesture.gesture_token,
-            timestamp_ms=timestamp_ms
-        )
+        now = timestamp_ms if timestamp_ms is not None else (time.time() * 1000.0)
 
-        if mode == DeviceMode.NO_ACTION:
-            # Complete suppression
-            arbitrated = GestureClassification(
-                gesture_token=gesture.gesture_token,
-                c_gesture=0.0,
-                requires_gaze_target=gesture.requires_gaze_target,
-                action_intent="NO_ACTION",
-                stable_duration_ms=gesture.stable_duration_ms,
-                timestamp_ms=gesture.timestamp_ms
-            )
-        elif mode == DeviceMode.KEYBOARD:
-            # Suppress gesture while user is typing
-            arbitrated = GestureClassification(
-                gesture_token=GestureToken.NONE,
+        with self._lock:
+            dt_kb = now - self._last_keyboard_timestamp_ms
+            dt_mouse = now - self._last_mouse_timestamp_ms
+
+        # Priority 1: Physical Keyboard active -> Complete suppression of gesture interaction
+        if 0.0 <= dt_kb < self.keyboard_lockout_ms:
+            suppressed_gesture = GestureClassification(
+                gesture_token=GestureToken.FIST,
                 c_gesture=0.0,
                 requires_gaze_target=False,
                 action_intent="NO_ACTION",
                 stable_duration_ms=0.0,
-                timestamp_ms=gesture.timestamp_ms
+                timestamp_ms=now
             )
-        elif mode == DeviceMode.MOUSE_PRIORITY:
-            # Soft confidence reduction
-            arbitrated = GestureClassification(
+            return suppressed_gesture, DeviceMode.KEYBOARD
+
+        # Priority 2: Physical Mouse active -> Soft reduction of gesture confidence
+        if 0.0 <= dt_mouse < self.mouse_lockout_ms:
+            reduced_gesture = GestureClassification(
                 gesture_token=gesture.gesture_token,
                 c_gesture=float(gesture.c_gesture * self.soft_reduction_factor),
                 requires_gaze_target=gesture.requires_gaze_target,
                 action_intent=gesture.action_intent,
                 stable_duration_ms=gesture.stable_duration_ms,
-                timestamp_ms=gesture.timestamp_ms
+                timestamp_ms=now
             )
-        else:
-            # GESTURE mode: uninhibited
-            arbitrated = gesture
+            return reduced_gesture, DeviceMode.MOUSE_PRIORITY
 
-        return arbitrated, mode
+        # Priority 3: Multimodal Gesture active
+        if gesture.gesture_token not in (GestureToken.NONE, GestureToken.FIST) and gesture.c_gesture > 0.0:
+            return gesture, DeviceMode.GESTURE
+
+        # Idle state (FIST / NONE)
+        idle_gesture = GestureClassification(
+            gesture_token=GestureToken.FIST,
+            c_gesture=0.0,
+            requires_gaze_target=False,
+            action_intent="NO_ACTION",
+            stable_duration_ms=0.0,
+            timestamp_ms=now
+        )
+        return idle_gesture, DeviceMode.NO_ACTION
 
 
 __all__ = ["ModalityArbiter"]

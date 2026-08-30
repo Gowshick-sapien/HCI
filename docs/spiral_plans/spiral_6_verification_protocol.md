@@ -68,11 +68,13 @@ This document outlines the formal test protocol for verifying **Deliverable E2 (
 
 | Test Identifier | Description | Verification Type | Status | Operator Signature |
 |---|---|---|---|---|
-| **AUT-E2-01** | HUD Render Latency ($\le 1.0\text{ ms}$) | Automated Benchmark | READY | Automated CI |
-| **AUT-E2-02** | Click-Through Window Transparency Flags | Automated Unit | READY | Automated CI |
-| **AUT-E2-03** | Confidence Bars Geometry & Normalization | Automated Unit | READY | Automated CI |
-| **AUT-E2-04** | Dwell Progress Ring Sweep Calculation | Automated Unit | READY | Automated CI |
-| **AUT-E2-05** | Health & Modality Badge Visual Mapping | Automated Unit | READY | Automated CI |
-| **AUT-E2-06** | End-to-End HUD Pipeline Integration | Automated Integr | READY | Automated CI |
-| **TC-MAN-01** | Live Transparent HUD Overlay & Click-Through | Manual Visual | READY | Operator Review |
-| **TC-MAN-02** | Live Dwell Confirmation Ring & Health Badge | Manual Visual | READY | Operator Review |
+| **AUT-E2-01** | HUD Render Latency ($\le 1.0\text{ ms}$) | Automated Benchmark | PASS | Automated CI (0.5397 ms) |
+| **AUT-E2-02** | Click-Through Window Transparency Flags | Automated Unit | PASS | Automated CI (2/2 passed) |
+| **AUT-E2-03** | Confidence Bars Geometry & Normalization | Automated Unit | PASS | Automated CI (1/1 passed) |
+| **AUT-E2-04** | Dwell Progress Ring Sweep Calculation | Automated Unit | PASS | Automated CI (1/1 passed) |
+| **AUT-E2-05** | Health & Modality Badge Visual Mapping | Automated Unit | PASS | Automated CI (2/2 passed) |
+| **AUT-E2-06** | End-to-End HUD Pipeline Integration | Automated Integr | PASS | Automated CI (1/1 passed) |
+| **TC-MAN-01** | Live Transparent HUD Overlay & Click-Through | Manual Visual | PASS | Operator Verified (Live click-through & overlay) |
+| **TC-MAN-02** | Live Dwell Confirmation Ring & Health Badge | Manual Visual | PASS | Operator Verified (Live tracking & SPRT updates) |
+
+

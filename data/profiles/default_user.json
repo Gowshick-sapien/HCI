@@ -1,15 +1,15 @@
 {
   "user_id": "default_user",
-  "version_id": 3,
-  "timestamp_epoch": 1788105295.5942295,
+  "version_id": 23,
+  "timestamp_epoch": 1788754245.2770233,
   "session_id": "session_0",
   "is_session_boundary": true,
   "modality_weights": {
-    "EYE": 0.22962729938320797,
-    "HEAD": 0.4759282634083161,
-    "HAND": 0.2944444372084759,
-    "GAZE": 0.22962729938320797,
-    "GESTURE": 0.2944444372084759
+    "EYE": 0.05000017130594195,
+    "HEAD": 0.8999882414994601,
+    "HAND": 0.05001158719459795,
+    "GAZE": 0.05000017130594195,
+    "GESTURE": 0.05001158719459795
   },
   "action_thresholds": {
     "SCROLL_UP": 0.55,
@@ -145,11 +145,11 @@
     }
   },
   "adaptation_confidence_index": 0.6319444444444444,
-  "weight_stability_index": 1.0,
+  "weight_stability_index": 0.9999999999999988,
   "expected_calibration_error": 0.2416666666666667,
-  "cumulative_adaptation_gain": -0.010348232385961185,
-  "total_interactions_seen": 66,
-  "total_updates_approved": 2,
+  "cumulative_adaptation_gain": -0.0021178439012859616,
+  "total_interactions_seen": 352,
+  "total_updates_approved": 22,
   "total_updates_rejected": 0,
   "failure_counts_by_taxonomy": {
     "FALSE_ACTIVATION": 0,

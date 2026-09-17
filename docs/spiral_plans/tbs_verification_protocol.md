@@ -82,8 +82,8 @@ This document defines the formal verification protocol for **TBS-D1 (Interactive
 
 | Test Identifier | Description | Verification Type | Status | Operator Signature |
 |---|---|---|---|---|
-| **AUT-TBS-01** | Hitbox Geometry Inspection ($\ge 140\text{ px}$) | Automated Static | READY | Automated CI |
-| **AUT-TBS-02** | Zero Emojis Validation | Automated Linter | READY | Automated CI |
+| **AUT-TBS-01** | Hitbox Geometry Inspection ($\ge 140\text{ px}$) | Automated Static | PASS | Automated CI ($\ge 140\text{px} \times 60\text{px}$) |
+| **AUT-TBS-02** | Zero Emojis Validation | Automated Linter | PASS | Automated CI (Zero Emojis) |
 | **AUT-TBS-03** | WebSocket Streaming Bridge Latency | Automated Unit | READY | Automated CI |
 | **AUT-TBS-04** | End-to-End Perception Pipeline Bridge | Automated Integr | READY | Automated CI |
 | **TC-TB-01** | Primary Action Button Activation | Manual Visual | READY | Operator Review |

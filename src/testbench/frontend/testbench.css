@@ -1,0 +1,656 @@
+/* ==========================================================================
+   Multimodal HCI Interactive Testbench Suite (TBS-D1)
+   Refined, Subtle, Modern Minimalist Dark Theme
+   Strictly Zero Emojis Across Entire Scope
+   ========================================================================== */
+
+:root {
+  --bg-main: #0d1117;
+  --bg-surface: #151b23;
+  --bg-card: #161b22;
+  --bg-card-hover: #1c2128;
+  --bg-input: #0d1117;
+
+  --border-color: #21262d;
+  --border-subtle: #21262d;
+  --border-hover: #30363d;
+  --border-focus: #38bdf8;
+
+  --text-primary: #f0f6fc;
+  --text-secondary: #8b949e;
+  --text-muted: #6e7681;
+
+  /* Subtle, curated, professional accents */
+  --accent-cyan: #38bdf8;
+  --accent-primary: #38bdf8;
+  --accent-primary-subtle: rgba(56, 189, 248, 0.1);
+
+  --accent-emerald: #10b981;
+  --accent-emerald-subtle: rgba(16, 185, 129, 0.1);
+
+  --accent-amber: #f59e0b;
+  --accent-amber-subtle: rgba(245, 158, 11, 0.1);
+
+  --accent-red: #ef4444;
+  --accent-red-subtle: rgba(239, 68, 68, 0.1);
+
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  position: relative;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --------------------------------------------------------------------------
+   Top Live Telemetry Strip
+   -------------------------------------------------------------------------- */
+.telemetry-bar {
+  background-color: rgba(13, 17, 23, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 10px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 500;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.telemetry-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.telemetry-label {
+  color: var(--text-muted);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.telemetry-value {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.status-online {
+  color: var(--accent-emerald);
+}
+
+.status-offline {
+  color: var(--accent-red);
+}
+
+.btn-recenter {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-hover);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-recenter:hover {
+  background-color: var(--bg-card-hover);
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
+
+.nav-tab-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  background-color: rgba(0, 0, 0, 0.25);
+  padding: 2px;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+}
+
+.nav-tab-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.nav-tab-link:hover {
+  color: var(--text-primary);
+}
+
+.nav-tab-link.active {
+  color: var(--text-primary);
+  background-color: var(--bg-card);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* --------------------------------------------------------------------------
+   Main Container & Headers
+   -------------------------------------------------------------------------- */
+.testbench-container {
+  flex: 1;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 28px 32px 48px;
+}
+
+.testbench-header {
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 16px;
+}
+
+.testbench-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.2px;
+}
+
+.testbench-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  font-weight: 400;
+}
+
+/* --------------------------------------------------------------------------
+   8-Scenario Grid Layout
+   -------------------------------------------------------------------------- */
+.testbench-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.test-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 250px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  position: relative;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.test-card.active-gaze {
+  border-color: rgba(56, 189, 248, 0.55);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(56, 189, 248, 0.2);
+}
+
+.test-card.card-warning {
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+.test-card.card-warning.active-gaze {
+  border-color: rgba(239, 68, 68, 0.55);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(239, 68, 68, 0.2);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.card-tag {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+}
+
+.tag-warning {
+  background-color: var(--accent-red-subtle);
+  border-color: rgba(239, 68, 68, 0.25);
+  color: var(--accent-red);
+}
+
+.card-mini-btn {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.card-mini-btn:hover {
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
+.card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.card-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin-bottom: 16px;
+}
+
+.target-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin: 10px 0;
+  position: relative;
+}
+
+.card-feedback {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 10px;
+  margin-top: 12px;
+  transition: color 0.15s ease;
+}
+
+/* --------------------------------------------------------------------------
+   Standardized Target Hitboxes (Generous Fitts' Law Sizing)
+   -------------------------------------------------------------------------- */
+.target-button {
+  width: 100%;
+  max-width: 280px;
+  min-height: 60px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-hover);
+  border-radius: 6px;
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 10px 16px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.target-button:hover,
+.target-button.gaze-hover {
+  background-color: var(--bg-card-hover);
+  border-color: var(--accent-primary);
+}
+
+.target-button.clicked {
+  background-color: var(--accent-emerald-subtle);
+  border-color: var(--accent-emerald);
+  transform: scale(0.99);
+}
+
+.target-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--text-primary);
+}
+
+.target-sublabel {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 3px;
+}
+
+/* Target 2: Hover Dwell Zone */
+.target-zone {
+  width: 100%;
+  max-width: 280px;
+  min-height: 64px;
+  background-color: var(--bg-surface);
+  border: 1px dashed var(--border-hover);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  transition: all 0.15s ease;
+}
+
+.target-zone.gaze-hover {
+  border-color: var(--accent-primary);
+  background-color: var(--bg-card-hover);
+}
+
+.target-zone.dwell-complete {
+  border-color: var(--accent-emerald);
+  border-style: solid;
+  background-color: var(--accent-emerald-subtle);
+}
+
+.dwell-bar-wrapper {
+  width: 100%;
+  height: 4px;
+  background-color: var(--bg-main);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.dwell-progress-bar {
+  width: 0%;
+  height: 100%;
+  background-color: var(--accent-primary);
+  transition: width 0.05s linear;
+}
+
+/* Target 3: Context Menu Popup */
+.context-menu-popup {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-hover);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  width: 240px;
+  z-index: 50;
+  margin-top: 6px;
+  overflow: hidden;
+}
+
+.context-item {
+  padding: 9px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.15s ease;
+}
+
+.context-item:last-child {
+  border-bottom: none;
+}
+
+.context-item:hover,
+.context-item.gaze-hover {
+  background-color: var(--accent-primary-subtle);
+  color: var(--text-primary);
+}
+
+/* Target 4: Text Input Field */
+.target-input {
+  width: 100%;
+  max-width: 280px;
+  height: 52px;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-hover);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+  padding: 0 12px;
+  outline: none;
+  cursor: text;
+  caret-color: var(--accent-primary);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.target-input:focus,
+.target-input.gaze-hover,
+.target-input.text-pointer-active {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px var(--accent-primary-subtle);
+  cursor: text;
+}
+
+.handoff-badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  color: var(--accent-amber);
+  background-color: var(--accent-amber-subtle);
+  padding: 3px 8px;
+  border-radius: 4px;
+  margin-top: 8px;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+/* Target 5: Dropdown Option Selector */
+.custom-dropdown {
+  width: 100%;
+  max-width: 280px;
+  position: relative;
+}
+
+.dropdown-header {
+  width: 100%;
+  height: 52px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-hover);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.dropdown-header:hover,
+.dropdown-header.gaze-hover {
+  border-color: var(--accent-primary);
+}
+
+.dropdown-arrow {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.dropdown-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-hover);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  z-index: 50;
+  margin-top: 4px;
+  overflow: hidden;
+}
+
+.dropdown-option {
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: all 0.15s ease;
+}
+
+.dropdown-option:last-child {
+  border-bottom: none;
+}
+
+.dropdown-option:hover,
+.dropdown-option.gaze-hover {
+  background-color: var(--accent-primary-subtle);
+  color: var(--accent-primary);
+}
+
+/* Target 6: Kinetic Scroll Viewport */
+.scroll-container {
+  width: 100%;
+  max-width: 280px;
+  height: 120px;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  padding: 8px 10px;
+}
+
+.scroll-container.scroll-pulse-up,
+.scroll-container.scroll-pulse-down {
+  border-color: var(--accent-emerald);
+}
+
+.scroll-item {
+  padding: 6px 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scroll-item:last-child {
+  border-bottom: none;
+}
+
+.scroll-controls {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  width: 100%;
+  max-width: 280px;
+}
+
+.scroll-btn {
+  flex: 1;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.scroll-btn:hover {
+  background-color: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+}
+
+/* Target 7: Tier-2 High-Consequence Action */
+.warning-target {
+  background-color: rgba(239, 68, 68, 0.04);
+  border-color: rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+  position: relative;
+  overflow: hidden;
+}
+
+.warning-target:hover,
+.warning-target.gaze-hover {
+  border-color: var(--accent-red);
+  background-color: rgba(239, 68, 68, 0.08);
+}
+
+.dwell-circle-indicator {
+  width: 32px;
+  height: 32px;
+  margin: 4px 0;
+}
+
+.dwell-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.dwell-track {
+  fill: none;
+  stroke: rgba(239, 68, 68, 0.15);
+  stroke-width: 3;
+}
+
+.dwell-stroke {
+  fill: none;
+  stroke: var(--accent-red);
+  stroke-width: 3;
+  stroke-dasharray: 113;
+  stroke-dashoffset: 113;
+  transition: stroke-dashoffset 0.05s linear;
+}
+
+/* Target 8: Physical Hardware Mouse Arbitration */
+.mouse-target {
+  border-color: var(--border-hover);
+}
+
+.mouse-target.mouse-active {
+  border-color: var(--accent-amber);
+  background-color: var(--accent-amber-subtle);
+}
+
+/* --------------------------------------------------------------------------
+   Live Reticle Canvas Overlay
+   -------------------------------------------------------------------------- */
+.gaze-reticle-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Utility Classes */
+.hidden {
+  display: none !important;
+}

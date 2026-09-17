@@ -38,7 +38,7 @@ class GestureClassifier:
     def __init__(
         self,
         vocabulary: Optional[GestureVocabulary] = None,
-        default_pinch_threshold: float = 0.085,
+        default_pinch_threshold: float = 0.065,
         fist_curl_threshold: float = 0.58,
         pinch_hold_duration_ms: float = 500.0
     ) -> None:
@@ -101,46 +101,72 @@ class GestureClassifier:
         ring_tip = pts[self.RING_TIP]
         pinky_tip = pts[self.PINKY_TIP]
 
-        all_curled = all(curls[f] >= self.fist_curl_threshold for f in ["index", "middle", "ring", "pinky"])
+        curled_count = sum(curls[f] >= 0.40 for f in ["index", "middle", "ring", "pinky"])
+        mean_curl = float(np.mean([curls[f] for f in ["index", "middle", "ring", "pinky"]]))
+
+        # Compute thumb extension metrics
+        d_thumb_len = np.linalg.norm(thumb_tip - thumb_mcp)
+        d_thumb_segments = np.linalg.norm(thumb_tip - thumb_ip) + np.linalg.norm(thumb_ip - thumb_mcp)
+        thumb_curl = 1.0 - (d_thumb_len / max(1e-4, d_thumb_segments))
 
         # -------------------------------------------------------------
-        # 1. FIST REST GUARD & THUMBS UP (All 4 4-finger curl state)
+        # 1. THUMBS UP EVALUATION (Upward extended thumb with flexed/curled fingers)
         # -------------------------------------------------------------
-        if all_curled:
-            # Thumb must point vertically upward (tip above IP, IP above MCP, tip well above index knuckle)
-            d_thumb_len = np.linalg.norm(thumb_tip - thumb_mcp)
-            d_thumb_segments = np.linalg.norm(thumb_tip - thumb_ip) + np.linalg.norm(thumb_ip - thumb_mcp)
-            thumb_curl = 1.0 - (d_thumb_len / max(1e-4, d_thumb_segments))
+        # In a thumbs-up pose, the thumb points vertically up (y is smaller), thumb is straight,
+        # and the other four fingertips are all noticeably lower (larger y in image space).
+        other_tips_lower = all(
+            pts[tip_idx][1] > (thumb_tip[1] + 0.015)
+            for tip_idx in [self.INDEX_TIP, self.MIDDLE_TIP, self.RING_TIP, self.PINKY_TIP]
+        )
+        is_thumb_up = (
+            (thumb_curl < 0.38) and
+            (thumb_tip[1] < index_mcp[1] - max(0.025, 0.030 * scale_factor)) and
+            (thumb_tip[1] < thumb_mcp[1] - max(0.020, 0.025 * scale_factor)) and
+            (thumb_tip[1] < thumb_ip[1]) and
+            other_tips_lower and
+            (curls["index"] >= 0.38) and
+            (curled_count >= 3 or mean_curl >= 0.40) and
+            (np.linalg.norm(thumb_tip - index_tip) > 0.05 * scale_factor)
+        )
 
-            is_thumb_up = (
-                (thumb_tip[1] < index_mcp[1] - 0.08 * scale_factor) and
-                (thumb_tip[1] < thumb_mcp[1] - 0.06 * scale_factor) and
-                (thumb_curl < 0.25)
-            )
-
-            if is_thumb_up:
-                token = GestureToken.THUMBS_UP
-                c_conf = float(sigmoid(index_mcp[1] - thumb_tip[1], steepness=20.0 / scale_factor, midpoint=0.08))
-                c_conf = max(0.75, c_conf)
-            else:
-                token = GestureToken.FIST
-                mean_curl = float(np.mean([curls[f] for f in ["index", "middle", "ring", "pinky"]]))
-                c_conf = float(sigmoid(mean_curl, steepness=20.0, midpoint=self.fist_curl_threshold))
-                c_conf = max(0.80, c_conf)
-
+        if is_thumb_up:
+            token = GestureToken.THUMBS_UP
+            c_conf = float(sigmoid(index_mcp[1] - thumb_tip[1], steepness=15.0 / scale_factor, midpoint=0.03))
+            c_conf = max(0.80, min(0.98, c_conf))
             self._update_stable_duration(token, delta_t)
             token_def = self.vocabulary.get_definition(token)
+            self._prev_wrist_pos = (pts[self.WRIST][0], pts[self.WRIST][1], pts[self.WRIST][2])
             return GestureClassification(
                 gesture_token=token,
                 c_gesture=c_conf,
                 requires_gaze_target=token_def.requires_gaze_target,
-                action_intent=token_def.mapped_action.value if not token_def.is_rest_state else "NO_ACTION",
+                action_intent=token_def.mapped_action.value,
                 stable_duration_ms=self._stable_duration_ms,
                 timestamp_ms=timestamp_ms
             )
 
         # -------------------------------------------------------------
-        # 2. PINCH FAMILY EVALUATION (Thumb to Fingertip Contact)
+        # 2. FIST REST GUARD (All 4 fingers curled)
+        # -------------------------------------------------------------
+        all_curled = (curled_count >= 3 and mean_curl >= 0.44) or all(curls[f] >= self.fist_curl_threshold for f in ["index", "middle", "ring", "pinky"])
+        if all_curled:
+            token = GestureToken.FIST
+            c_conf = float(sigmoid(mean_curl, steepness=20.0, midpoint=self.fist_curl_threshold))
+            c_conf = max(0.80, c_conf)
+            self._update_stable_duration(token, delta_t)
+            token_def = self.vocabulary.get_definition(token)
+            self._prev_wrist_pos = (pts[self.WRIST][0], pts[self.WRIST][1], pts[self.WRIST][2])
+            return GestureClassification(
+                gesture_token=token,
+                c_gesture=c_conf,
+                requires_gaze_target=token_def.requires_gaze_target,
+                action_intent="NO_ACTION",
+                stable_duration_ms=self._stable_duration_ms,
+                timestamp_ms=timestamp_ms
+            )
+
+        # -------------------------------------------------------------
+        # 3. PINCH FAMILY EVALUATION (Thumb to Fingertip Contact)
         # -------------------------------------------------------------
         pinch_distances = {
             GestureToken.PINCH_INDEX: float(np.linalg.norm(thumb_tip - index_tip)),
@@ -149,18 +175,28 @@ class GestureClassifier:
             GestureToken.PINCH_PINKY: float(np.linalg.norm(thumb_tip - pinky_tip)),
         }
 
-        best_pinch_token, min_dist = min(pinch_distances.items(), key=lambda x: x[1])
+        # Sort fingers by proximity to thumb tip
+        sorted_pinches = sorted(pinch_distances.items(), key=lambda x: x[1])
+        best_pinch_token, min_dist = sorted_pinches[0]
+        second_best_token, second_dist = sorted_pinches[1]
+
         base_thresh = self.default_pinch_threshold * scale_factor
         if personalized_thresholds and best_pinch_token.value in personalized_thresholds:
             base_thresh = personalized_thresholds[best_pinch_token.value] * scale_factor
 
-        effective_pinch_thresh = max(0.05, base_thresh)
+        effective_pinch_thresh = max(0.045, base_thresh)
 
-        if min_dist <= effective_pinch_thresh:
+        # Disambiguation: Winner finger must have a clear margin over competing fingers
+        # to prevent noisy cross-finger activations during traversal or relaxed hand postures.
+        is_distinct_winner = (second_dist - min_dist) >= (0.005 * scale_factor)
+
+        if min_dist <= effective_pinch_thresh and is_distinct_winner:
             c_conf = float(sigmoid(effective_pinch_thresh - min_dist, steepness=35.0 / scale_factor, midpoint=0.0))
             c_conf = max(0.70, c_conf)
 
-            if (self._current_token == best_pinch_token or self._current_token == GestureToken.PINCH_HOLD) and \
+            # PINCH_HOLD is only triggered if an index pinch is sustained
+            if best_pinch_token == GestureToken.PINCH_INDEX and \
+               (self._current_token == GestureToken.PINCH_INDEX or self._current_token == GestureToken.PINCH_HOLD) and \
                self._stable_duration_ms >= self.pinch_hold_duration_ms:
                 active_token = GestureToken.PINCH_HOLD
             else:
@@ -168,6 +204,7 @@ class GestureClassifier:
 
             self._update_stable_duration(active_token, delta_t)
             token_def = self.vocabulary.get_definition(active_token)
+            self._prev_wrist_pos = (pts[self.WRIST][0], pts[self.WRIST][1], pts[self.WRIST][2])
             return GestureClassification(
                 gesture_token=active_token,
                 c_gesture=c_conf,
@@ -178,13 +215,48 @@ class GestureClassifier:
             )
 
         # -------------------------------------------------------------
-        # 3. OPEN PALM EVALUATION (All Fingers Extended)
+        # 4. DYNAMIC SWIPE GESTURES (High Velocity Translation)
+        # Dynamic translational swipes take precedence over static open-palm hover.
+        # -------------------------------------------------------------
+        current_wrist = (pts[self.WRIST][0], pts[self.WRIST][1], pts[self.WRIST][2])
+        swipe_token = GestureToken.NONE
+
+        if self._prev_wrist_pos is not None and hand.wrist_velocity >= 0.22:
+            dx = current_wrist[0] - self._prev_wrist_pos[0]
+            dy = current_wrist[1] - self._prev_wrist_pos[1]
+            abs_dx = abs(dx)
+            abs_dy = abs(dy)
+
+            if abs_dx > abs_dy and abs_dx > 0.005:
+                # Mirror view: user moving hand to user's right moves to camera left (dx < 0)
+                swipe_token = GestureToken.SWIPE_RIGHT if dx < 0 else GestureToken.SWIPE_LEFT
+            elif abs_dy > abs_dx and abs_dy > 0.005:
+                # Vertical: dy < 0 is upward translation, dy > 0 is downward translation
+                swipe_token = GestureToken.SWIPE_UP if dy < 0 else GestureToken.SWIPE_DOWN
+
+        if swipe_token != GestureToken.NONE:
+            c_conf = float(np.clip(0.70 + (hand.wrist_velocity - 0.22) * 0.50, 0.75, 0.98))
+            self._update_stable_duration(swipe_token, delta_t)
+            self._prev_wrist_pos = current_wrist
+            token_def = self.vocabulary.get_definition(swipe_token)
+            return GestureClassification(
+                gesture_token=swipe_token,
+                c_gesture=c_conf,
+                requires_gaze_target=token_def.requires_gaze_target,
+                action_intent=token_def.mapped_action.value,
+                stable_duration_ms=self._stable_duration_ms,
+                timestamp_ms=timestamp_ms
+            )
+
+        # -------------------------------------------------------------
+        # 4. OPEN PALM EVALUATION (All Fingers Extended, Low-Velocity Hover)
         # -------------------------------------------------------------
         all_extended = all(curls[f] <= 0.48 for f in ["index", "middle", "ring", "pinky"])
         if all_extended and min_dist > 0.12 * scale_factor:
             token = GestureToken.OPEN_PALM
             c_conf = 0.85
             self._update_stable_duration(token, delta_t)
+            self._prev_wrist_pos = current_wrist
             token_def = self.vocabulary.get_definition(token)
             return GestureClassification(
                 gesture_token=token,
@@ -196,44 +268,9 @@ class GestureClassifier:
             )
 
         # -------------------------------------------------------------
-        # 4. DYNAMIC SWIPE GESTURES
-        # -------------------------------------------------------------
-        if hand.wrist_velocity >= 2.0:
-            current_wrist = (pts[self.WRIST][0], pts[self.WRIST][1], pts[self.WRIST][2])
-            if self._prev_wrist_pos is not None:
-                dx = current_wrist[0] - self._prev_wrist_pos[0]
-                dy = current_wrist[1] - self._prev_wrist_pos[1]
-                abs_dx = abs(dx)
-                abs_dy = abs(dy)
-
-                if abs_dx > abs_dy and abs_dx > 0.02:
-                    token = GestureToken.SWIPE_LEFT if dx < 0 else GestureToken.SWIPE_RIGHT
-                elif abs_dy > abs_dx and abs_dy > 0.02:
-                    token = GestureToken.SWIPE_UP if dy < 0 else GestureToken.SWIPE_DOWN
-                else:
-                    token = GestureToken.NONE
-
-                if token != GestureToken.NONE:
-                    c_conf = float(sigmoid(hand.wrist_velocity, steepness=2.0, midpoint=2.0))
-                    self._update_stable_duration(token, delta_t)
-                    self._prev_wrist_pos = current_wrist
-                    token_def = self.vocabulary.get_definition(token)
-                    return GestureClassification(
-                        gesture_token=token,
-                        c_gesture=c_conf,
-                        requires_gaze_target=token_def.requires_gaze_target,
-                        action_intent=token_def.mapped_action.value,
-                        stable_duration_ms=self._stable_duration_ms,
-                        timestamp_ms=timestamp_ms
-                    )
-
-            self._prev_wrist_pos = current_wrist
-        else:
-            self._prev_wrist_pos = (pts[self.WRIST][0], pts[self.WRIST][1], pts[self.WRIST][2])
-
-        # -------------------------------------------------------------
         # 5. DEFAULT FALLBACK
         # -------------------------------------------------------------
+        self._prev_wrist_pos = current_wrist
         self._update_stable_duration(GestureToken.NONE, delta_t)
         return GestureClassification(
             gesture_token=GestureToken.NONE,

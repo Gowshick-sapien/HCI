@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multimodal Gesture Vocabulary Verification Suite (TBS-G1)</title>
+  <link rel="stylesheet" href="testbench.css">
+  <link rel="stylesheet" href="gestures.css">
+</head>
+<body>
+  <!-- Global Top Telemetry Banner -->
+  <header id="telemetry-bar" class="telemetry-bar">
+    <div class="telemetry-item">
+      <span class="telemetry-label">Status</span>
+      <span id="status-connection" class="telemetry-value status-online">CONNECTING</span>
+    </div>
+    <div class="telemetry-item">
+      <span class="telemetry-label">Modality</span>
+      <span id="status-modality" class="telemetry-value">GESTURE</span>
+    </div>
+    <div class="telemetry-item">
+      <span class="telemetry-label">Gaze</span>
+      <span id="status-gaze" class="telemetry-value">(0, 0)</span>
+    </div>
+    <div class="telemetry-item">
+      <span class="telemetry-label">Gesture</span>
+      <span id="status-gesture" class="telemetry-value">NONE (0.00)</span>
+    </div>
+    <div class="telemetry-item">
+      <span class="telemetry-label">Action</span>
+      <span id="status-action" class="telemetry-value">NO_ACTION</span>
+    </div>
+    <div class="telemetry-item">
+      <span class="telemetry-label">Latency</span>
+      <span id="status-latency" class="telemetry-value">-- ms</span>
+    </div>
+    <div class="telemetry-item">
+      <button id="btn-recenter-gaze" class="btn-recenter" type="button" title="Center gaze reticle (Press C)">Recenter (C)</button>
+    </div>
+    <nav class="nav-tab-container" aria-label="Testbench Suite Navigation">
+      <a href="index.html" class="nav-tab-link">Scenarios</a>
+      <a href="gestures.html" class="nav-tab-link active">Gesture Vocabulary</a>
+    </nav>
+  </header>
+
+  <!-- Main Interaction Container -->
+  <main class="testbench-container">
+    <section class="testbench-header">
+      <div class="header-split">
+        <div>
+          <h1 class="testbench-title">Multimodal Gesture Vocabulary Suite (TBS-G1)</h1>
+          <p class="testbench-subtitle">Dedicated Empirical Verification Matrix for 13 Built-in Hand and Finger Gesture Tokens</p>
+        </div>
+        <div class="header-actions">
+          <button id="btn-reset-all-gestures" class="btn-primary-action" type="button">RESET ALL METRICS</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Grid of 13 Vocabulary Gesture Testing Cards -->
+    <div class="gesture-grid">
+
+      <!-- Gesture 01: PINCH_INDEX -->
+      <article class="gesture-card" id="card-pinch-index" data-token="PINCH_INDEX">
+        <div class="card-header">
+          <span class="card-tag">GESTURE 01</span>
+          <button class="card-mini-btn btn-reset-card" data-target="PINCH_INDEX" type="button">RESET</button>
+          <h2 class="card-title">PINCH_INDEX</h2>
+        </div>
+        <div class="card-meta">
+          <span class="badge badge-action">PRIMARY_CLICK</span>
+          <span class="badge badge-gaze">REQUIRES GAZE TARGET</span>
+        </div>
+        <p class="card-desc">Index finger and thumb tip pinch gesture. Dispatches primary click action at gaze anchor.</p>
+        <div class="gesture-widget">
+          <button id="widget-pinch-index" class="widget-btn" type="button">
+            <span class="widget-label">PRIMARY CLICK TARGET</span>
+            <span class="widget-counter" id="count-pinch-index">Triggers: 0</span>
+          </button>
+        </div>
+        <div class="meter-wrapper">
+          <div class="meter-bar" id="meter-pinch-index" style="width: 0%;"></div>
+        </div>
+        <div class="card-feedback" id="fb-pinch-index">Status: Waiting for PINCH_INDEX...</div>
+      </article>
+
+      <!-- Gesture 02: PINCH_MIDDLE -->
+      <article class="gesture-card" id="card-pinch-middle" data-token="PINCH_MIDDLE">
+        <div class="card-header">
+          <span class="card-tag">GESTURE 02</span>
+          <button class="card-mini-btn btn-reset-card" data-target="PINCH_MIDDLE" type="button">RESET</button>
+          <h2 class="card-title">PINCH_MIDDLE</h2>
+        </div>
+        <div class="card-meta">
+          <span class="badge badge-action">RIGHT_CLICK</span>
+          <span class="badge badge-gaze">REQUIRES GAZE TARGET</span>
+        </div>
+        <p class="card-desc">Middle finger and thumb tip pinch. Dispatches secondary or context menu click.</p>
+        <div class="gesture-widget">
+          <div id="widget-pinch-middle" class="widget-box">
+            <span class="widget-label">CONTEXT MENU TARGET</span>
+            <span class="widget-counter" id="count-pinch-middle">Triggers: 0</span>
+            <div id="popup-pinch-middle" class="mini-popup hidden">Context Action Dispatched</div>
+          </div>
+        </div>
+        <div class="meter-wrapper">
+          <div class="meter-bar" id="meter-pinch-middle" style="width: 0%;"></div>
+        </div>
+        <div class="card-feedback" id="fb-pinch-middle">Status: Waiting for PINCH_MIDDLE...</div>
+      </article>
+
+      <!-- Gesture 03: PINCH_RING -->
+      <article class="gesture-card" id="card-pinch-ring" data-token="PINCH_RING">
+        <div class="card-header">
+          <span class="card-tag">GESTURE 03</span>
+          <button class="card-mini-btn btn-reset-card" data-target="PINCH_RING" type="button">RESET</button>
+          <h2 class="card-title">PINCH_RING</h2>
+        </div>
+        <div class="card-meta">
+          <span class="badge badge-action">DOUBLE_CLICK</span>
+          <span class="badge badge-gaze">REQUIRES GAZE TARGET</span>
+        </div>
+        <p class="card-desc">Ring finger and thumb tip pinch. Dispatches double click actuation.</p>
+        <div class="gesture-widget">
+          <div id="widget-pinch-ring" class="widget-box">
+            <span class="widget-label">DOUBLE CLICK VERIFIER</span>
+            <span class="widget-counter" id="count-pinch-ring">Triggers: 0</span>
+          </div>
+        </div>
+        <div class="meter-wrapper">
+          <div class="meter-bar" id="meter-pinch-ring" style="width: 0%;"></div>
+        </div>
+        <div class="card-feedback" id="fb-pinch-ring">Status: Waiting for PINCH_RING...</div>
+      </article>
+
+      <!-- Gesture 04: PINCH_PINKY -->
+      <article class="gesture-card" id="card-pinch-pinky" data-token="PINCH_PINKY">
+        <div class="card-header">
+          <span class="card-tag">GESTURE 04</span>
+          <button class="card-mini-btn btn-reset-card" data-target="PINCH_PINKY" type="button">RESET</button>
+          <h2 class="card-title">PINCH_PINKY</h2>
+        </div>
+        <div class="card-meta">
+          <span class="badge badge-action">MIDDLE_CLICK</span>
+          <span class="badge badge-gaze">REQUIRES GAZE TARGET</span>
+        </div>
+        <p class="card-desc">Pinky finger and thumb tip pinch. Dispatches auxiliary middle mouse button click.</p>
+        <div class="gesture-widget">
+          <div id="widget-pinch-pinky" class="widget-box">
+            <span class="widget-label">MIDDLE CLICK TARGET</span>
+            <span class="widget-counter" id="count-pinch-pinky">Triggers: 0</span>
+          </div>
+        </div>
+        <div class="meter-wrapper">
+          <div class="meter-bar" id="meter-pinch-pinky" style="width: 0%;"></div>
+        </div>
+        <div class="card-feedback" id="fb-pinch-pinky">Status: Waiting for PINCH_PINKY...</div>
+      </article>
+
+      <!-- Gesture 05: PINCH_HOLD -->
+      <article class="gesture-card" id="card-pinch-hold" data-token="PINCH_HOLD">
+        <div class="card-header">
+          <span class="card-tag">GESTURE 05</span>
+          <button class="card-mini-btn btn-reset-card" data-target="PINCH_HOLD" type="button">RESET</button>
+          <h2 class="card-title">PINCH_HOLD</h2>
+        </div>
+        <div class="card-meta">
+          <span class="badge badge-action">DRAG_START</span>
+          <span class="badge badge-gaze">REQUIRES GAZE TARGET</span>
+        </div>
+        <p class="card-desc">Sustained index-thumb pinch held past dwell threshold. Initiates drag sequence.</p>
+        <div class="gesture-widget">
+          <div id="widget-pinch-hold" class="widget-box">
+            <span class="widget-label">DRAG INITIATION DOCK</span>
+            <span class="widget-counter" id="count-pinch-hold">Triggers: 0</span>
+            <span id="hold-state-indicator" class="widget-state-indicator">State: Released</span>
+          </div>
+        </div>
+        <div class="meter-wrapper">
+          <div class="meter-bar" id="meter-pinch-hold" style="width: 0%;"></div>
+        </div>
+        <div class="card-feedback" id="fb-pinch-hold">Status: Waiting for PINCH_HOLD...</div>
+      </article>
+
+      <!-- Gesture 06: PINCH_RELEASE -->
+      <article class="gesture-card" id="card-pinch-release" data-token="PINCH_RELEASE">
+        <div class="card-header">
+          <span class="card-tag">GESTURE 06</span>
+          <button class="card-mini-btn btn-reset-card" data-target="PINCH_RELEASE" type="button">RESET</button>
+          <h2 class="card-title">PINCH_RELEASE</h2>
+        </div>
+        <div class="card-meta">
+          <span class="badge badge-action">DRAG_DROP</span>
+          <span class="badge badge-gaze">REQUIRES GAZE TARGET</span>
+        </div>
+        <p class="card-desc">Opening of fingers following active pinch hold. Finalizes drag and drop at current gaze target.</p>
+        <div class="gesture-widget">
+          <div id="widget-pinch-release" class="widget-box">
+            <span class="widget-label">DROP RECEPTION ZONE</span>
+            <span class="widget-counter" id="count-pinch-release">Triggers: 0</span>
+          </div>
+        </div>
+        <div class="meter-wrapper">
+          <div class="meter-bar" id="meter-pinch-release" style="width: 0%;"></div>
+        </div>
+        <div class="card-feedback" id="fb-pinch-release">Status: Waiting for PINCH_RELEASE...</div>
+      </article>
+
+      <!-- Gesture 07: SWIPE_LEFT -->
+      <article class="gesture-card" id="card-swipe-left" data-token="SWIPE_LEFT">
+        <div class="card-header">
+          <span class="card-tag">GESTURE 07</span>
+          <button class="card-mini-btn btn-reset-card" data-target="SWIPE_LEFT" type="button">RESET</button>
+          <h2 class="card-title">SWIPE_LEFT</h2>
+        </div>
+        <div class="card-meta">
+          <span class="badge badge-action">NAVIGATE_PREVIOUS</span>
+          <span class="badge badge-global">GLOBAL GESTURE</span>
+        </div>
+        <p class="card-desc">Rapid horizontal hand translation to the left. Triggers back navigation or deck retreat.</p>
+        <div class="gesture-widget">
+          <div id="widget-swipe-left" class="widget-carousel">
+            <div id="carousel-track-left" class="carousel-track">
+              <div class="carousel-item">Pane A</div>
+              <div class="carousel-item">Pane B</div>
+              <div class="carousel-item">Pane C</div>
+            </div>
+          </div>
+          <span class="widget-counter" id="count-swipe-left">Triggers: 0</span>
+        </div>
+        <div class="meter-wrapper">
+          <div class="meter-bar" id="meter-swipe-left" style="width: 0%;"></div>
+        </div>
+        <div class="card-feedback" id="fb-swipe-left">Status: Waiting for SWIPE_LEFT...</div>
+      </article>
+
+      <!-- Gesture 08: SWIPE_RIGHT -->
+      <article class="gesture-card" id="card-swipe-right" data-token="SWIPE_RIGHT">
+        <div class="card-header">
+          <span class="card-tag">GESTURE 08</span>
+          <button class="card-mini-btn btn-reset-card" data-target="SWIPE_RIGHT" type="button">RESET</button>
+          <h2 class="card-title">SWIPE_RIGHT</h2>
+        </div>
+        <div class="card-meta">
+          <span class="badge badge-action">NAVIGATE_NEXT</span>
+          <span class="badge badge-global">GLOBAL GESTURE</span>
+        </div>
+        <p class="card-desc">Rapid horizontal hand translation to the right. Triggers forward navigation or next deck.</p>
+        <div class="gesture-widget">
+          <div id="widget-swipe-right" class="widget-carousel">
+            <div id="carousel-track-right" class="carousel-track">
+              <div class="carousel-item">Deck 01</div>
+              <div class="carousel-item">Deck 02</div>
+              <div class="carousel-item">Deck 03</div>
+            </div>
+          </div>
+          <span class="widget-counter" id="count-swipe-right">Triggers: 0</span>
+        </div>
+        <div class="meter-wrapper">
+          <div class="meter-bar" id="meter-swipe-right" style="width: 0%;"></div>
+        </div>
+        <div class="card-feedback" id="fb-swipe-right">Status: Waiting for SWIPE_RIGHT...</div>
+      </article>
+
+      <!-- Gesture 09: SWIPE_UP -->
+      <article class="gesture-card" id="card-swipe-up" data-token="SWIPE_UP">
+        <div class="card-header">
+          <span class="card-tag">GESTURE 09</span>
+          <button class="card-mini-btn btn-reset-card" data-target="SWIPE_UP" type="button">RESET</button>
+          <h2 class="card-title">SWIPE_UP</h2>
+        </div>
+        <div class="card-meta">
+          <span class="badge badge-action">SCROLL_UP</span>
+          <span class="badge badge-global">GLOBAL GESTURE</span>
+        </div>
+        <p class="card-desc">Rapid vertical hand translation upward. Scrolls focused or global viewport upward.</p>
+        <div class="gesture-widget">
+          <div id="widget-swipe-up-scroll" class="mini-scroll-box">
+            <div class="mini-scroll-content">
+              <div>Entry Index 01 - Header Origin</div>
+              <div>Entry Index 02 - Upper Boundary</div>
+              <div>Entry Index 03 - Telemetry Vector</div>
+              <div>Entry Index 04 - Mid Span Item</div>
+              <div>Entry Index 05 - Lower Boundary</div>
+            </div>
+          </div>
+          <span class="widget-counter" id="count-swipe-up">Triggers: 0</span>
+        </div>
+        <div class="meter-wrapper">
+          <div class="meter-bar" id="meter-swipe-up" style="width: 0%;"></div>
+        </div>
+        <div class="card-feedback" id="fb-swipe-up">Status: Waiting for SWIPE_UP...</div>
+      </article>
+
+      <!-- Gesture 10: SWIPE_DOWN -->
+      <article class="gesture-card" id="card-swipe-down" data-token="SWIPE_DOWN">
+        <div class="card-header">
+          <span class="card-tag">GESTURE 10</span>
+          <button class="card-mini-btn btn-reset-card" data-target="SWIPE_DOWN" type="button">RESET</button>
+          <h2 class="card-title">SWIPE_DOWN</h2>
+        </div>
+        <div class="card-meta">
+          <span class="badge badge-action">SCROLL_DOWN</span>
+          <span class="badge badge-global">GLOBAL GESTURE</span>
+        </div>
+        <p class="card-desc">Rapid vertical hand translation downward. Scrolls focused viewport downward.</p>
+        <div class="gesture-widget">
+          <div id="widget-swipe-down-scroll" class="mini-scroll-box">
+            <div class="mini-scroll-content">
+              <div>Segment Index 01 - Alpha Channel</div>
+              <div>Segment Index 02 - Beta Baseline</div>
+              <div>Segment Index 03 - Gamma Check</div>
+              <div>Segment Index 04 - Delta Offset</div>
+              <div>Segment Index 05 - Epsilon Footer</div>
+            </div>
+          </div>
+          <span class="widget-counter" id="count-swipe-down">Triggers: 0</span>
+        </div>
+        <div class="meter-wrapper">
+          <div class="meter-bar" id="meter-swipe-down" style="width: 0%;"></div>
+        </div>
+        <div class="card-feedback" id="fb-swipe-down">Status: Waiting for SWIPE_DOWN...</div>
+      </article>
+
+      <!-- Gesture 11: OPEN_PALM -->
+      <article class="gesture-card" id="card-open-palm" data-token="OPEN_PALM">
+        <div class="card-header">
+          <span class="card-tag">GESTURE 11</span>
+          <button class="card-mini-btn btn-reset-card" data-target="OPEN_PALM" type="button">RESET</button>
+          <h2 class="card-title">OPEN_PALM</h2>
+        </div>
+        <div class="card-meta">
+          <span class="badge badge-action">HOVER</span>
+          <span class="badge badge-gaze">REQUIRES GAZE TARGET</span>
+        </div>
+        <p class="card-desc">Five fingers fully extended in open palm orientation. Maintains continuous hover activation.</p>
+        <div class="gesture-widget">
+          <div id="widget-open-palm" class="widget-box">
+            <span class="widget-label">HOVER ENGAGEMENT ZONE</span>
+            <span class="widget-counter" id="count-open-palm">Triggers: 0</span>
+            <div class="dwell-bar-wrapper">
+              <div id="dwell-open-palm" class="dwell-progress-bar"></div>
+            </div>
+          </div>
+        </div>
+        <div class="meter-wrapper">
+          <div class="meter-bar" id="meter-open-palm" style="width: 0%;"></div>
+        </div>
+        <div class="card-feedback" id="fb-open-palm">Status: Waiting for OPEN_PALM...</div>
+      </article>
+
+      <!-- Gesture 12: FIST -->
+      <article class="gesture-card" id="card-fist" data-token="FIST">
+        <div class="card-header">
+          <span class="card-tag">GESTURE 12</span>
+          <button class="card-mini-btn btn-reset-card" data-target="FIST" type="button">RESET</button>
+          <h2 class="card-title">FIST</h2>
+        </div>
+        <div class="card-meta">
+          <span class="badge badge-rest">REST GUARD</span>
+          <span class="badge badge-global">MIDAS SUPPRESSION</span>
+        </div>
+        <p class="card-desc">Closed fist resting state. Actively suppresses unintended clicks (Midas Touch mitigation).</p>
+        <div class="gesture-widget">
+          <div id="widget-fist" class="widget-box shield-box">
+            <span class="widget-label">REST GUARD LOCK</span>
+            <span id="shield-status" class="shield-label">SHIELD ACTIVE: READY</span>
+            <span class="widget-counter" id="count-fist">Triggers: 0</span>
+          </div>
+        </div>
+        <div class="meter-wrapper">
+          <div class="meter-bar" id="meter-fist" style="width: 0%;"></div>
+        </div>
+        <div class="card-feedback" id="fb-fist">Status: Waiting for FIST...</div>
+      </article>
+
+      <!-- Gesture 13: THUMBS_UP -->
+      <article class="gesture-card" id="card-thumbs-up" data-token="THUMBS_UP">
+        <div class="card-header">
+          <span class="card-tag">GESTURE 13</span>
+          <button class="card-mini-btn btn-reset-card" data-target="THUMBS_UP" type="button">RESET</button>
+          <h2 class="card-title">THUMBS_UP</h2>
+        </div>
+        <div class="card-meta">
+          <span class="badge badge-action">CONFIRM_SUBMIT</span>
+          <span class="badge badge-global">HANDOFF EXIT</span>
+        </div>
+        <p class="card-desc">Upward extended thumb gesture. Confirms high-tier actions or releases keyboard handoff.</p>
+        <div class="gesture-widget">
+          <div id="widget-thumbs-up" class="widget-box confirm-box">
+            <span class="widget-label">CONFIRMATION GATE</span>
+            <span id="confirm-status" class="confirm-stamp hidden">SUBMIT CONFIRMED</span>
+            <span class="widget-counter" id="count-thumbs-up">Triggers: 0</span>
+          </div>
+        </div>
+        <div class="meter-wrapper">
+          <div class="meter-bar" id="meter-thumbs-up" style="width: 0%;"></div>
+        </div>
+        <div class="card-feedback" id="fb-thumbs-up">Status: Waiting for THUMBS_UP...</div>
+      </article>
+
+    </div>
+  </main>
+
+  <!-- Live Gaze Reticle Canvas Overlay -->
+  <canvas id="gaze-reticle-canvas" class="gaze-reticle-canvas"></canvas>
+
+  <script src="gestures.js"></script>
+</body>
+</html>

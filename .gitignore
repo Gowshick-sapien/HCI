@@ -36,7 +36,10 @@ wheels/
 .installed.cfg
 *.egg
 .pytest_cache/
+.benchmarks/
 .coverage
+.coverage.*
+coverage.xml
 htmlcov/
 .mypy_cache/
 
@@ -56,14 +59,28 @@ logs/system/*
 reports/figures/*
 !reports/figures/.gitkeep
 
-# Local user profile instances (Keep template default_user.json and .gitkeep)
+# Local user profile instances generated during testing/calibration (Keep template default_user.json and .gitkeep)
 profiles/*
 !profiles/.gitkeep
 !profiles/default_user.json
+data/profiles/*
+!data/profiles/.gitkeep
+!data/profiles/default_user.json
 
-# Large media video recordings (Keep .gitkeep)
+# Large media video recordings and screen captures (Keep .gitkeep)
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
 media/demo_recordings/*
 !media/demo_recordings/.gitkeep
+
+# Temporary synthetic test traces and benchmark outputs (Keep .gitkeep)
+data/benchmark_traces/*
+!data/benchmark_traces/.gitkeep
+data/synthetic_outliers/*
+!data/synthetic_outliers/.gitkeep
 
 # LaTeX build intermediate artifacts
 paper/*.aux

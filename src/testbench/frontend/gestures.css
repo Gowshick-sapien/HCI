@@ -1,0 +1,303 @@
+/* ==========================================================================
+   Multimodal Gesture Vocabulary Verification Suite (TBS-G1) Styles
+   Refined, Subtle, Modern Minimalist Dark Theme
+   Strictly Zero Emojis Across Entire Scope
+   ========================================================================== */
+
+.header-split {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-primary-action {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-hover);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 5px;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+  transition: all 0.15s ease;
+}
+
+.btn-primary-action:hover {
+  background-color: var(--bg-card-hover);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+/* --------------------------------------------------------------------------
+   Gesture 13-Card Grid
+   -------------------------------------------------------------------------- */
+.gesture-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+  gap: 20px;
+}
+
+.gesture-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 330px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  position: relative;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.gesture-card.active-gesture {
+  border-color: rgba(16, 185, 129, 0.6);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(16, 185, 129, 0.2);
+}
+
+.gesture-card.gaze-hover {
+  border-color: var(--accent-primary);
+}
+
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.badge {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.badge-action {
+  background-color: var(--accent-primary-subtle);
+  color: var(--accent-primary);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+}
+
+.badge-gaze {
+  background-color: rgba(168, 85, 247, 0.1);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+.badge-global {
+  background-color: var(--accent-amber-subtle);
+  color: var(--accent-amber);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.badge-rest {
+  background-color: var(--accent-emerald-subtle);
+  color: var(--accent-emerald);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+/* --------------------------------------------------------------------------
+   Gesture Testing Interactive Widgets
+   -------------------------------------------------------------------------- */
+.gesture-widget {
+  margin: 12px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 84px;
+}
+
+.widget-btn {
+  width: 100%;
+  max-width: 260px;
+  min-height: 60px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-hover);
+  border-radius: 6px;
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 8px 12px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.widget-btn:hover,
+.widget-btn.active-pulse {
+  background-color: var(--bg-card-hover);
+  border-color: var(--accent-emerald);
+}
+
+.widget-box {
+  width: 100%;
+  max-width: 260px;
+  min-height: 60px;
+  background-color: var(--bg-surface);
+  border: 1px dashed var(--border-hover);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  position: relative;
+  transition: all 0.15s ease;
+}
+
+.widget-box.active-pulse {
+  border-style: solid;
+  border-color: var(--accent-emerald);
+  background-color: var(--accent-emerald-subtle);
+}
+
+.widget-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--text-primary);
+}
+
+.widget-counter {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-top: 3px;
+}
+
+.widget-state-indicator {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent-amber);
+  margin-top: 2px;
+}
+
+.mini-popup {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-hover);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent-primary);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  z-index: 10;
+  white-space: nowrap;
+}
+
+/* Carousel Widget */
+.widget-carousel {
+  width: 100%;
+  max-width: 260px;
+  overflow: hidden;
+  border: 1px solid var(--border-hover);
+  border-radius: 6px;
+  background-color: var(--bg-input);
+}
+
+.carousel-track {
+  display: flex;
+  transition: transform 0.3s ease;
+}
+
+.carousel-item {
+  min-width: 100%;
+  padding: 14px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-primary);
+  background-color: var(--bg-surface);
+}
+
+/* Mini Scroll Box */
+.mini-scroll-box {
+  width: 100%;
+  max-width: 260px;
+  height: 64px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background-color: var(--bg-input);
+  padding: 4px 8px;
+}
+
+.mini-scroll-content > div {
+  font-size: 10px;
+  padding: 4px 6px;
+  margin-bottom: 2px;
+  background-color: var(--bg-surface);
+  border-radius: 3px;
+  color: var(--text-secondary);
+}
+
+/* Shield & Confirm */
+.shield-box.shield-locked {
+  border-color: var(--accent-emerald);
+  background-color: var(--accent-emerald-subtle);
+  border-style: solid;
+}
+
+.shield-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent-emerald);
+  letter-spacing: 0.3px;
+  margin-top: 3px;
+}
+
+.confirm-stamp {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent-emerald);
+  background-color: var(--accent-emerald-subtle);
+  border: 1px solid var(--accent-emerald);
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  letter-spacing: 0.3px;
+}
+
+/* --------------------------------------------------------------------------
+   Confidence Meter Bar
+   -------------------------------------------------------------------------- */
+.meter-wrapper {
+  width: 100%;
+  height: 4px;
+  background-color: var(--bg-main);
+  border-radius: 2px;
+  overflow: hidden;
+  margin: 6px 0;
+}
+
+.meter-bar {
+  height: 100%;
+  background-color: var(--accent-primary);
+  transition: width 0.1s linear, background-color 0.2s ease;
+}
+
+.meter-bar.high-conf {
+  background-color: var(--accent-emerald);
+}

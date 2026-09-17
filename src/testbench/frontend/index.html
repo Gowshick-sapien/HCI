@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multimodal HCI Interactive Testbench Suite</title>
+  <link rel="stylesheet" href="testbench.css">
+</head>
+<body>
+  <!-- Global Top Telemetry Banner -->
+  <header id="telemetry-bar" class="telemetry-bar">
+    <div class="telemetry-item">
+      <span class="telemetry-label">Status</span>
+      <span id="status-connection" class="telemetry-value status-online">CONNECTING</span>
+    </div>
+    <div class="telemetry-item">
+      <span class="telemetry-label">Modality</span>
+      <span id="status-modality" class="telemetry-value">GESTURE</span>
+    </div>
+    <div class="telemetry-item">
+      <span class="telemetry-label">Gaze</span>
+      <span id="status-gaze" class="telemetry-value">(0, 0)</span>
+    </div>
+    <div class="telemetry-item">
+      <span class="telemetry-label">Gesture</span>
+      <span id="status-gesture" class="telemetry-value">NONE (0.00)</span>
+    </div>
+    <div class="telemetry-item">
+      <span class="telemetry-label">Action</span>
+      <span id="status-action" class="telemetry-value">NO_ACTION</span>
+    </div>
+    <div class="telemetry-item">
+      <span class="telemetry-label">Latency</span>
+      <span id="status-latency" class="telemetry-value">-- ms</span>
+    </div>
+    <div class="telemetry-item">
+      <button id="btn-recenter-gaze" class="btn-recenter" type="button" title="Center gaze reticle (Press C)">Recenter (C)</button>
+    </div>
+    <nav class="nav-tab-container" aria-label="Testbench Suite Navigation">
+      <a href="index.html" class="nav-tab-link active">Scenarios</a>
+      <a href="gestures.html" class="nav-tab-link">Gesture Vocabulary</a>
+    </nav>
+  </header>
+
+  <!-- Main Interaction Testbench Container -->
+  <main class="testbench-container">
+    <section class="testbench-header">
+      <h1 class="testbench-title">Multimodal HCI Interaction Testbench (TBS-D1)</h1>
+      <p class="testbench-subtitle">Standardized Empirical Verification Surface for Eye-Gaze and Gesture Primitives</p>
+    </section>
+
+    <!-- 8 Standardized Interactive Testing Scenarios -->
+    <div class="testbench-grid">
+
+      <!-- Scenario 1: Primary Click Button -->
+      <article class="test-card" id="card-primary-click">
+        <div class="card-header">
+          <span class="card-tag">Scenario 01</span>
+          <button id="btn-reset-primary" class="card-mini-btn" type="button" title="Reset click counter">Reset</button>
+          <h2 class="card-title">Primary Click Action</h2>
+        </div>
+        <p class="card-desc">Fixate gaze on target button and execute PINCH_INDEX gesture.</p>
+        <div class="target-container">
+          <button id="btn-primary-click" class="target-button primary-target" type="button">
+            <span class="target-label">Primary Click Target</span>
+            <span id="primary-click-count" class="target-sublabel">Clicks: 0</span>
+          </button>
+        </div>
+        <div class="card-feedback" id="feedback-primary-click">Status: Waiting for interaction...</div>
+      </article>
+
+      <!-- Scenario 2: Gaze Hover & Dwell Zone -->
+      <article class="test-card" id="card-hover-dwell">
+        <div class="card-header">
+          <span class="card-tag">Scenario 02</span>
+          <h2 class="card-title">Gaze Hover & Dwell Fixation</h2>
+        </div>
+        <p class="card-desc">Maintain continuous eye-gaze fixation inside the target zone without gesturing.</p>
+        <div class="target-container">
+          <div id="zone-hover-dwell" class="target-zone hover-target">
+            <span class="target-label">Gaze Hover Zone</span>
+            <div class="dwell-bar-wrapper">
+              <div id="dwell-progress-bar" class="dwell-progress-bar"></div>
+            </div>
+            <span id="dwell-time-label" class="target-sublabel">Dwell: 0 ms</span>
+          </div>
+        </div>
+        <div class="card-feedback" id="feedback-hover-dwell">Status: No fixation detected</div>
+      </article>
+
+      <!-- Scenario 3: Secondary Click / Context Menu -->
+      <article class="test-card" id="card-context-menu">
+        <div class="card-header">
+          <span class="card-tag">Scenario 03</span>
+          <h2 class="card-title">Secondary Click / Context Menu</h2>
+        </div>
+        <p class="card-desc">Fixate gaze on target and execute PINCH_MIDDLE to open context menu.</p>
+        <div class="target-container">
+          <button id="btn-secondary-click" class="target-button secondary-target" type="button">
+            <span class="target-label">Secondary Click Target</span>
+            <span class="target-sublabel">Action: Open Context</span>
+          </button>
+          <!-- Context Menu Modal Popup -->
+          <div id="context-menu-popup" class="context-menu-popup hidden">
+            <div class="context-item" data-action="ACTION_A">Select Option Alpha</div>
+            <div class="context-item" data-action="ACTION_B">Select Option Beta</div>
+            <div class="context-item" data-action="ACTION_C">Select Option Gamma</div>
+          </div>
+        </div>
+        <div class="card-feedback" id="feedback-context-menu">Status: Context menu closed</div>
+      </article>
+
+      <!-- Scenario 4: Text Input & Keyboard Handoff -->
+      <article class="test-card" id="card-keyboard-handoff">
+        <div class="card-header">
+          <span class="card-tag">Scenario 04</span>
+          <h2 class="card-title">Text Input & Keyboard Handoff</h2>
+        </div>
+        <p class="card-desc">Gaze click field to focus. Multimodal clicks pause while typing.</p>
+        <div class="target-container">
+          <input id="input-text-handoff" class="target-input" type="text" placeholder="Gaze-click here to type..." autocomplete="off">
+          <div id="keyboard-handoff-badge" class="handoff-badge hidden">Keyboard Active - Typing Mode</div>
+        </div>
+        <div class="card-feedback" id="feedback-keyboard-handoff">Status: Multimodal active (Defocus or THUMBS_UP to exit)</div>
+      </article>
+
+      <!-- Scenario 5: Dropdown Option Selector -->
+      <article class="test-card" id="card-dropdown-select">
+        <div class="card-header">
+          <span class="card-tag">Scenario 05</span>
+          <h2 class="card-title">Dropdown Option Selector</h2>
+        </div>
+        <p class="card-desc">Gaze click to open dropdown. Fixate on option and pinch to select.</p>
+        <div class="target-container">
+          <div id="custom-dropdown" class="custom-dropdown">
+            <div id="dropdown-header" class="dropdown-header">
+              <span id="dropdown-selected-text">Select Operational Profile</span>
+              <span class="dropdown-arrow">&#9662;</span>
+            </div>
+            <div id="dropdown-list" class="dropdown-list hidden">
+              <div class="dropdown-option" data-value="PROFILE_STANDARD">Standard Desktop Profile</div>
+              <div class="dropdown-option" data-value="PROFILE_HIGH_GAIN">High Sensitivity Profile</div>
+              <div class="dropdown-option" data-value="PROFILE_TREMOR_DAMPED">Tremor Damped Profile</div>
+              <div class="dropdown-option" data-value="PROFILE_FATIGUE_ADAPTIVE">Fatigue Adaptive Profile</div>
+            </div>
+          </div>
+        </div>
+        <div class="card-feedback" id="feedback-dropdown-select">Status: Standard profile active</div>
+      </article>
+
+      <!-- Scenario 6: Kinetic Scroll Viewport -->
+      <article class="test-card" id="card-scroll-viewport">
+        <div class="card-header">
+          <span class="card-tag">Scenario 06</span>
+          <h2 class="card-title">Kinetic Scroll Viewport</h2>
+        </div>
+        <p class="card-desc">Perform SWIPE_UP and SWIPE_DOWN gestures to scroll content hands-free.</p>
+        <div class="target-container">
+          <div id="scroll-container" class="scroll-container">
+            <div class="scroll-item">Telemetry Record Item 01 - Modality Gaze Baseline</div>
+            <div class="scroll-item">Telemetry Record Item 02 - Head Euler Vernier Trim</div>
+            <div class="scroll-item">Telemetry Record Item 03 - 21-point Kinematics Valid</div>
+            <div class="scroll-item">Telemetry Record Item 04 - Holt-Winters Smooth Filter</div>
+            <div class="scroll-item">Telemetry Record Item 05 - Mahalanobis Head Distance</div>
+            <div class="scroll-item">Telemetry Record Item 06 - Gaze Dwell Temporal Window</div>
+            <div class="scroll-item">Telemetry Record Item 07 - Simplex Box Projection Bound</div>
+            <div class="scroll-item">Telemetry Record Item 08 - Wald SPRT Accumulator Check</div>
+            <div class="scroll-item">Telemetry Record Item 09 - Online Micro-SGD Gradient</div>
+            <div class="scroll-item">Telemetry Record Item 10 - Macro Epoch State Transition</div>
+            <div class="scroll-item">Telemetry Record Item 11 - Latency Execution Budget Met</div>
+            <div class="scroll-item">Telemetry Record Item 12 - Supervisory Feedback Observed</div>
+          </div>
+          <div class="scroll-controls">
+            <button id="btn-scroll-up" class="scroll-btn" type="button">Scroll Up</button>
+            <button id="btn-scroll-down" class="scroll-btn" type="button">Scroll Down</button>
+          </div>
+        </div>
+        <div class="card-feedback" id="feedback-scroll-viewport">Status: Scroll position: 0%</div>
+      </article>
+
+      <!-- Scenario 7: Tier-2 High-Consequence Reset -->
+      <article class="test-card card-warning" id="card-tier2-reset">
+        <div class="card-header">
+          <span class="card-tag tag-warning">Scenario 07</span>
+          <h2 class="card-title">Tier-2 Consequence Confirmation</h2>
+        </div>
+        <p class="card-desc">High-risk action. Requires full 600ms visual dwell confirmation sweep.</p>
+        <div class="target-container">
+          <button id="btn-tier2-reset" class="target-button warning-target" type="button">
+            <span class="target-label">System Recalibrate / Reset</span>
+            <div class="dwell-circle-indicator" id="dwell-circle-indicator">
+              <svg class="dwell-svg" viewBox="0 0 44 44">
+                <circle class="dwell-track" cx="22" cy="22" r="18"></circle>
+                <circle id="dwell-stroke" class="dwell-stroke" cx="22" cy="22" r="18"></circle>
+              </svg>
+            </div>
+            <span id="tier2-sublabel" class="target-sublabel">Hold Gaze 600ms to Confirm</span>
+          </button>
+        </div>
+        <div class="card-feedback" id="feedback-tier2-reset">Status: Safety gate locked (No accidental trigger)</div>
+      </article>
+
+      <!-- Scenario 8: Physical Hardware Mouse Takeover -->
+      <article class="test-card" id="card-mouse-takeover">
+        <div class="card-header">
+          <span class="card-tag">Scenario 08</span>
+          <h2 class="card-title">Physical Mouse Takeover Override</h2>
+        </div>
+        <p class="card-desc">Move the hardware mouse to test instantaneous priority handoff.</p>
+        <div class="target-container">
+          <div id="zone-mouse-takeover" class="target-zone mouse-target">
+            <span class="target-label">Hardware Mouse Arbitration Zone</span>
+            <span id="mouse-override-status" class="target-sublabel">Multimodal Mode Active</span>
+          </div>
+        </div>
+        <div class="card-feedback" id="feedback-mouse-takeover">Status: Multimodal tracking active</div>
+      </article>
+
+    </div>
+  </main>
+
+  <!-- Live Gaze Reticle Canvas Overlay -->
+  <canvas id="gaze-reticle-canvas" class="gaze-reticle-canvas"></canvas>
+
+  <script src="testbench.js"></script>
+</body>
+</html>

@@ -91,34 +91,67 @@ class GazeCalibrator:
             Y[0, i] = s[0]
             Y[1, i] = s[1]
 
-        # 3. Coupled Eye-Head Feature Matrix X: shape (5, N) -> [rx, ry, yaw, pitch, 1]
-        X_aff = np.zeros((5, n_pts), dtype=np.float64)
-        for i, s in enumerate(unique_samples):
-            X_aff[0, i] = s[2] # rx
-            X_aff[1, i] = s[3] # ry
-            X_aff[2, i] = s[4] # yaw
-            X_aff[3, i] = s[5] # pitch
-            X_aff[4, i] = 1.0
+        # 3. Decoupled Orthogonal Regression to eliminate horizontal-vertical cross-talk:
+        # Screen X depends strictly on [rx, yaw, 1.0]
+        # Screen Y depends strictly on [ry, pitch, 1.0]
+        tx = Y[0, :]
+        ty = Y[1, :]
+        rx = np.array([s[2] for s in unique_samples], dtype=np.float64)
+        ry = np.array([s[3] for s in unique_samples], dtype=np.float64)
+        yaw = np.array([s[4] for s in unique_samples], dtype=np.float64)
+        pitch = np.array([s[5] for s in unique_samples], dtype=np.float64)
 
-        # Solve Affine M (2x5) via Tikhonov ridge regression
-        reg_aff = self.regularization_lambda * np.eye(5, dtype=np.float64)
-        cov_aff = np.dot(X_aff, X_aff.T) + reg_aff
-        cov_aff_inv = np.linalg.pinv(cov_aff)
-        M_aff_2x5 = np.dot(Y, np.dot(X_aff.T, cov_aff_inv))
+        def solve_axis_ridge(
+            targets: np.ndarray,
+            feat_ocular: np.ndarray,
+            feat_head: np.ndarray,
+            reg: float = 1e-3
+        ) -> Tuple[float, float, float]:
+            f1_c = feat_ocular - np.mean(feat_ocular)
+            f2_c = feat_head - np.mean(feat_head)
+            t_c = targets - np.mean(targets)
+            s1 = float(np.std(feat_ocular)) if float(np.std(feat_ocular)) > 1e-6 else 1.0
+            s2 = float(np.std(feat_head)) if float(np.std(feat_head)) > 1e-6 else 1.0
 
-        # 4. Coupled Eye-Head Polynomial Matrix Phi: shape (9, N)
-        Phi = np.zeros((9, n_pts), dtype=np.float64)
-        for i, s in enumerate(unique_samples):
-            rx, ry, yaw, pitch = s[2], s[3], s[4], s[5]
-            Phi[:, i] = [1.0, rx, ry, yaw, pitch, rx ** 2, ry ** 2, yaw ** 2, pitch ** 2]
+            Z = np.vstack([f1_c / s1, f2_c / s2])
+            cov = np.dot(Z, Z.T) + reg * np.eye(2, dtype=np.float64)
+            w_std = np.dot(t_c, np.dot(Z.T, np.linalg.pinv(cov)))
 
-        reg_poly = self.regularization_lambda * np.eye(9, dtype=np.float64)
-        cov_poly = np.dot(Phi, Phi.T) + reg_poly
-        cov_poly_inv = np.linalg.pinv(cov_poly)
-        W_poly_2x9 = np.dot(Y, np.dot(Phi.T, cov_poly_inv))
+            w_ocular = float(w_std[0] / s1)
+            w_head = float(w_std[1] / s2)
+            bias = float(np.mean(targets) - w_ocular * np.mean(feat_ocular) - w_head * np.mean(feat_head))
+            return w_ocular, w_head, bias
+
+        w_rx, w_yaw, b_x = solve_axis_ridge(tx, rx, yaw, self.regularization_lambda)
+        w_ry, w_pitch, b_y = solve_axis_ridge(ty, ry, pitch, self.regularization_lambda)
+
+        # Assemble decoupled 2x5 Affine Matrix
+        # [ [w_rx, 0.0,  w_yaw, 0.0,     b_x],
+        #   [0.0,  w_ry, 0.0,   w_pitch, b_y] ]
+        M_aff_2x5 = np.array([
+            [w_rx, 0.0, w_yaw, 0.0, b_x],
+            [0.0, w_ry, 0.0, w_pitch, b_y]
+        ], dtype=np.float64)
+
+        # 4. Decoupled Polynomial Matrix: shape (2, 9)
+        # Phi slots: [1.0, rx, ry, yaw, pitch, rx**2, ry**2, yaw**2, pitch**2]
+        # For X: solve [1.0, rx, yaw, rx**2, yaw**2] -> slots 0, 1, 3, 5, 7
+        # For Y: solve [1.0, ry, pitch, ry**2, pitch**2] -> slots 0, 2, 4, 6, 8
+        Phi_x = np.vstack([np.ones(n_pts, dtype=np.float64), rx, yaw, rx**2, yaw**2])
+        cov_px = np.dot(Phi_x, Phi_x.T) + self.regularization_lambda * np.eye(5, dtype=np.float64)
+        w_px = np.dot(tx, np.dot(Phi_x.T, np.linalg.pinv(cov_px)))
+
+        Phi_y = np.vstack([np.ones(n_pts, dtype=np.float64), ry, pitch, ry**2, pitch**2])
+        cov_py = np.dot(Phi_y, Phi_y.T) + self.regularization_lambda * np.eye(5, dtype=np.float64)
+        w_py = np.dot(ty, np.dot(Phi_y.T, np.linalg.pinv(cov_py)))
+
+        W_poly_2x9 = np.zeros((2, 9), dtype=np.float64)
+        W_poly_2x9[0, [0, 1, 3, 5, 7]] = w_px
+        W_poly_2x9[1, [0, 2, 4, 6, 8]] = w_py
 
         # 5. Compute Cross-Validation Quality & Residual Error
-        Y_pred = np.dot(M_aff_2x5, X_aff)
+        X_aff_full = np.vstack([rx, ry, yaw, pitch, np.ones(n_pts, dtype=np.float64)])
+        Y_pred = np.dot(M_aff_2x5, X_aff_full)
         errors = np.sqrt(np.sum((Y - Y_pred) ** 2, axis=0)) # Euclidean pixel error per target point
 
         rmse = float(np.sqrt(np.mean(errors ** 2)))

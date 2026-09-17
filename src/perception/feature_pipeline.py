@@ -8,6 +8,7 @@ and Gaze Dwell Tracker.
 from __future__ import annotations
 
 import logging
+import math
 import time
 from typing import Optional, Tuple
 import cv2
@@ -65,22 +66,34 @@ class FeaturePipeline:
         )
 
         # 2. Dynamic Spatial Smoothing Filters
+        # Ocular iris ratio filter: eliminates webcam CMOS sensor jitter at the source
+        self.iris_filter = HoltWintersFilter(
+            dim=2,
+            alpha_0=0.15,
+            beta=0.0,
+            gamma=1.2,
+            alpha_min=0.08,
+            alpha_max=0.75
+        )
+        # Spatial screen gaze filter: rock-solid at rest (alpha=0.08), snaps on saccades
         self.gaze_filter = HoltWintersFilter(
             dim=2,
-            alpha_0=0.30,
-            beta=0.15,
-            gamma=0.015,
-            alpha_min=0.20,
+            alpha_0=0.15,
+            beta=0.0,
+            gamma=0.0035,
+            alpha_min=0.08,
             alpha_max=0.85
         )
         self.head_filter = HoltWintersFilter(
             dim=3,
-            alpha_0=0.30,
-            beta=0.15,
-            gamma=0.005,
-            alpha_min=0.20,
-            alpha_max=0.80
+            alpha_0=0.20,
+            beta=0.02,
+            gamma=0.008,
+            alpha_min=0.10,
+            alpha_max=0.75
         )
+        self._last_locked_gaze: Optional[Tuple[float, float]] = None
+        self._deadband_radius_px: float = 14.0
 
         # 3. Gaze Fixation & Dwell Tracker
         self.gaze_dwell_tracker = GazeDwellTracker(
@@ -122,27 +135,55 @@ class FeaturePipeline:
         # 3. 3D Hand Kinematics Extraction
         hand_data = self.hand_pose_extractor.extract(img, timestamp_sec=raw_frame.timestamp)
 
-        # 4. Gaze Coordinate Mapping & Spatial Smoothing
+        # 4. Smooth Head Pose Euler angles first so head coordinates are clean for gaze coupling
+        if head_data is not None:
+            smoothed_head = self.head_filter.update([head_data.yaw, head_data.pitch, head_data.roll])
+            head_euler = (float(smoothed_head[0]), float(smoothed_head[1]), float(smoothed_head[2]))
+            head_conf = head_data.confidence
+            head_yaw = head_euler[0]
+            head_pitch = head_euler[1]
+        else:
+            head_euler = (0.0, 0.0, 0.0)
+            head_conf = 0.0
+            head_yaw = 0.0
+            head_pitch = 0.0
+            head_data = HeadPoseLandmarks(
+                yaw=0.0, pitch=0.0, roll=0.0,
+                translation_vector=(0.0, 0.0, 0.0),
+                mahalanobis_distance=0.0,
+                confidence=0.0, variance=0.50
+            )
+
+        # 5. Gaze Coordinate Mapping & Spatial Smoothing
         if eye_data is not None and eye_data.confidence > 0.0:
-            head_yaw = head_data.yaw if head_data else 0.0
-            head_pitch = head_data.pitch if head_data else 0.0
+            # Low-pass filter raw iris coordinates to eliminate camera sensor CMOS jitter
+            smooth_iris = self.iris_filter.update([eye_data.iris_ratio_x, eye_data.iris_ratio_y])
+            iris_rx = float(smooth_iris[0])
+            iris_ry = float(smooth_iris[1])
 
             if profile and profile.gaze_calibration_matrix and profile.last_recalibration_timestamp > 0:
                 M_gaze = np.array(profile.gaze_calibration_matrix, dtype=np.float64)
                 raw_screen_u, raw_screen_v = apply_affine_gaze(
                     M_gaze,
-                    eye_data.iris_ratio_x,
-                    eye_data.iris_ratio_y,
+                    iris_rx,
+                    iris_ry,
                     head_yaw=head_yaw,
                     head_pitch=head_pitch
                 )
             else:
-                # High-dynamic range baseline gaze mapping with Eye-Head coordination
-                norm_gaze_x = (eye_data.iris_ratio_x - 0.50) * 4.5 + 0.50
-                norm_gaze_y = (eye_data.iris_ratio_y - 0.45) * 4.0 + 0.50
+                # Offset head angles relative to calibrated neutral pose if available
+                eff_yaw = head_yaw
+                eff_pitch = head_pitch
+                if profile and profile.neutral_pose_mean and len(profile.neutral_pose_mean) >= 2:
+                    eff_yaw -= profile.neutral_pose_mean[0]
+                    eff_pitch -= profile.neutral_pose_mean[1]
 
-                norm_gaze_x += (head_yaw / 20.0) * 0.45
-                norm_gaze_y -= (head_pitch / 18.0) * 0.40
+                # High-dynamic range baseline gaze mapping with Eye-Head coordination
+                norm_gaze_x = (0.50 - iris_rx) * 4.5 + 0.50
+                norm_gaze_y = (iris_ry - 0.45) * 4.0 + 0.50
+
+                norm_gaze_x += (eff_yaw / 20.0) * 0.45
+                norm_gaze_y += (eff_pitch / 18.0) * 0.40
 
                 raw_screen_u = norm_gaze_x * self.screen_width
                 raw_screen_v = norm_gaze_y * self.screen_height
@@ -150,8 +191,21 @@ class FeaturePipeline:
             raw_screen_u = float(np.clip(raw_screen_u, 0.0, self.screen_width))
             raw_screen_v = float(np.clip(raw_screen_v, 0.0, self.screen_height))
 
-            # Apply Holt-Winters smoothing
-            smoothed_gaze = self.gaze_filter.update([raw_screen_u, raw_screen_v], velocity_magnitude=hand_data.wrist_velocity)
+            # Apply deadband: if displacement from last locked gaze is within micro-tremor radius, damp it
+            if self._last_locked_gaze is not None:
+                dist = math.hypot(raw_screen_u - self._last_locked_gaze[0], raw_screen_v - self._last_locked_gaze[1])
+                if dist < self._deadband_radius_px:
+                    # Subtle blend towards locked position to completely cancel resting jitter
+                    blend = dist / self._deadband_radius_px
+                    raw_screen_u = self._last_locked_gaze[0] * (1.0 - blend) + raw_screen_u * blend
+                    raw_screen_v = self._last_locked_gaze[1] * (1.0 - blend) + raw_screen_v * blend
+                else:
+                    self._last_locked_gaze = (raw_screen_u, raw_screen_v)
+            else:
+                self._last_locked_gaze = (raw_screen_u, raw_screen_v)
+
+            # Apply Holt-Winters smoothing with intrinsic gaze velocity for instant saccadic snapping
+            smoothed_gaze = self.gaze_filter.update([raw_screen_u, raw_screen_v], velocity_magnitude=None)
             gaze_screen_xy = (float(smoothed_gaze[0]), float(smoothed_gaze[1]))
             gaze_conf = eye_data.confidence
             ear_val = (eye_data.left_ear + eye_data.right_ear) / 2.0
@@ -159,21 +213,7 @@ class FeaturePipeline:
             gaze_screen_xy = (self.screen_width / 2.0, self.screen_height / 2.0)
             gaze_conf = 0.0
             ear_val = 0.0
-
-        # Smooth Head Pose Euler angles
-        if head_data is not None:
-            smoothed_head = self.head_filter.update([head_data.yaw, head_data.pitch, head_data.roll])
-            head_euler = (float(smoothed_head[0]), float(smoothed_head[1]), float(smoothed_head[2]))
-            head_conf = head_data.confidence
-        else:
-            head_euler = (0.0, 0.0, 0.0)
-            head_conf = 0.0
-            head_data = HeadPoseLandmarks(
-                yaw=0.0, pitch=0.0, roll=0.0,
-                translation_vector=(0.0, 0.0, 0.0),
-                mahalanobis_distance=0.0,
-                confidence=0.0, variance=0.50
-            )
+            self._last_locked_gaze = None
 
         # 5. Gaze Dwell Tracking
         tau_dwell = profile.gaze_target_dwell_ms if profile else 120.0

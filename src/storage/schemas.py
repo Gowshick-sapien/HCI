@@ -369,6 +369,10 @@ class ProfileSnapshot:
         "FIST": 0.80,
         "THUMBS_UP": 0.75
     })
+    # Version 4 uses an anatomically-oriented canthus basis and coupled eye-head calibration (2x5).
+    # Legacy profiles default to 1 and must be recalibrated before their matrix
+    # is used with the new feature representation.
+    gaze_feature_version: int = 1
     keyboard_handoff_active: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
@@ -496,5 +500,6 @@ class ProfileSnapshot:
                 "FIST": 0.80,
                 "THUMBS_UP": 0.75
             },
+            gaze_feature_version=4,
             keyboard_handoff_active=False
         )

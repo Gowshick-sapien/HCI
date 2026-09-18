@@ -1,6 +1,6 @@
 """
 9-Point Desktop Gaze Calibration Engine & Mapping Solvers.
-Solves Coupled Eye-Head Affine (2x5) and 2nd-Order Polynomial (2x9) regression mapping
+Solves coupled eye-head affine (2x5) and 2nd-order polynomial (2x6) regression mapping
 from ocular pupil ratios and head Euler orientation to physical screen pixel coordinates.
 """
 
@@ -39,14 +39,14 @@ class GazeCalibrator:
     """
     Multi-Point Desktop Gaze Calibration Solver.
     Combines ocular pupil displacement (rx, ry) with head orientation (yaw, pitch)
-    using robust multi-pass aggregation and Tikhonov-regularized regression.
+    using robust multi-pass aggregation and coupled 2x5 affine least-squares regression.
     """
 
     def __init__(
         self,
         screen_width: int = 1920,
         screen_height: int = 1080,
-        regularization_lambda: float = 1e-3
+        regularization_lambda: float = 1e-3,
     ) -> None:
         self.screen_width = int(screen_width)
         self.screen_height = int(screen_height)
@@ -54,10 +54,10 @@ class GazeCalibrator:
 
     def solve(
         self,
-        samples: List[CalibrationPointSample]
+        samples: List[CalibrationPointSample],
     ) -> GazeCalibrationResult:
         """
-        Fits coupled eye-head affine and polynomial mapping matrices from recorded calibration samples.
+        Fits coupled eye-head affine and polynomial mappings from recorded calibration samples.
         Aggregates multiple samples per target coordinate (multi-pass verification).
 
         Args:
@@ -91,69 +91,30 @@ class GazeCalibrator:
             Y[0, i] = s[0]
             Y[1, i] = s[1]
 
-        # 3. Decoupled Orthogonal Regression to eliminate horizontal-vertical cross-talk:
-        # Screen X depends strictly on [rx, yaw, 1.0]
-        # Screen Y depends strictly on [ry, pitch, 1.0]
-        tx = Y[0, :]
-        ty = Y[1, :]
+        # 3. Coupled Eye-Head Affine Calibration (2x5 design matrix)
+        # Features: [rx, ry, head_yaw, head_pitch, 1.0]
         rx = np.array([s[2] for s in unique_samples], dtype=np.float64)
         ry = np.array([s[3] for s in unique_samples], dtype=np.float64)
         yaw = np.array([s[4] for s in unique_samples], dtype=np.float64)
         pitch = np.array([s[5] for s in unique_samples], dtype=np.float64)
 
-        def solve_axis_ridge(
-            targets: np.ndarray,
-            feat_ocular: np.ndarray,
-            feat_head: np.ndarray,
-            reg: float = 1e-3
-        ) -> Tuple[float, float, float]:
-            f1_c = feat_ocular - np.mean(feat_ocular)
-            f2_c = feat_head - np.mean(feat_head)
-            t_c = targets - np.mean(targets)
-            s1 = float(np.std(feat_ocular)) if float(np.std(feat_ocular)) > 1e-6 else 1.0
-            s2 = float(np.std(feat_head)) if float(np.std(feat_head)) > 1e-6 else 1.0
+        A = np.ones((n_pts, 5), dtype=np.float64)
+        A[:, 0] = rx
+        A[:, 1] = ry
+        A[:, 2] = yaw
+        A[:, 3] = pitch
 
-            Z = np.vstack([f1_c / s1, f2_c / s2])
-            cov = np.dot(Z, Z.T) + reg * np.eye(2, dtype=np.float64)
-            w_std = np.dot(t_c, np.dot(Z.T, np.linalg.pinv(cov)))
+        M_T, _, _, _ = np.linalg.lstsq(A, Y.T, rcond=None)
+        M_aff_2x5 = M_T.T
 
-            w_ocular = float(w_std[0] / s1)
-            w_head = float(w_std[1] / s2)
-            bias = float(np.mean(targets) - w_ocular * np.mean(feat_ocular) - w_head * np.mean(feat_head))
-            return w_ocular, w_head, bias
+        # Retain an ocular polynomial diagnostic model for callers that need it.
+        phi = np.column_stack([np.ones(n_pts), rx, ry, rx**2, ry**2, rx * ry])
+        poly_t, _, _, _ = np.linalg.lstsq(phi, Y.T, rcond=None)
+        W_poly_2x6 = poly_t.T
 
-        w_rx, w_yaw, b_x = solve_axis_ridge(tx, rx, yaw, self.regularization_lambda)
-        w_ry, w_pitch, b_y = solve_axis_ridge(ty, ry, pitch, self.regularization_lambda)
-
-        # Assemble decoupled 2x5 Affine Matrix
-        # [ [w_rx, 0.0,  w_yaw, 0.0,     b_x],
-        #   [0.0,  w_ry, 0.0,   w_pitch, b_y] ]
-        M_aff_2x5 = np.array([
-            [w_rx, 0.0, w_yaw, 0.0, b_x],
-            [0.0, w_ry, 0.0, w_pitch, b_y]
-        ], dtype=np.float64)
-
-        # 4. Decoupled Polynomial Matrix: shape (2, 9)
-        # Phi slots: [1.0, rx, ry, yaw, pitch, rx**2, ry**2, yaw**2, pitch**2]
-        # For X: solve [1.0, rx, yaw, rx**2, yaw**2] -> slots 0, 1, 3, 5, 7
-        # For Y: solve [1.0, ry, pitch, ry**2, pitch**2] -> slots 0, 2, 4, 6, 8
-        Phi_x = np.vstack([np.ones(n_pts, dtype=np.float64), rx, yaw, rx**2, yaw**2])
-        cov_px = np.dot(Phi_x, Phi_x.T) + self.regularization_lambda * np.eye(5, dtype=np.float64)
-        w_px = np.dot(tx, np.dot(Phi_x.T, np.linalg.pinv(cov_px)))
-
-        Phi_y = np.vstack([np.ones(n_pts, dtype=np.float64), ry, pitch, ry**2, pitch**2])
-        cov_py = np.dot(Phi_y, Phi_y.T) + self.regularization_lambda * np.eye(5, dtype=np.float64)
-        w_py = np.dot(ty, np.dot(Phi_y.T, np.linalg.pinv(cov_py)))
-
-        W_poly_2x9 = np.zeros((2, 9), dtype=np.float64)
-        W_poly_2x9[0, [0, 1, 3, 5, 7]] = w_px
-        W_poly_2x9[1, [0, 2, 4, 6, 8]] = w_py
-
-        # 5. Compute Cross-Validation Quality & Residual Error
-        X_aff_full = np.vstack([rx, ry, yaw, pitch, np.ones(n_pts, dtype=np.float64)])
-        Y_pred = np.dot(M_aff_2x5, X_aff_full)
-        errors = np.sqrt(np.sum((Y - Y_pred) ** 2, axis=0)) # Euclidean pixel error per target point
-
+        # 4. Compute calibration residuals using the runtime affine model.
+        Y_pred = np.dot(M_aff_2x5, A.T)
+        errors = np.sqrt(np.sum((Y - Y_pred) ** 2, axis=0))
         rmse = float(np.sqrt(np.mean(errors ** 2)))
         mae = float(np.mean(errors))
         max_err = float(np.max(errors))
@@ -173,7 +134,7 @@ class GazeCalibrator:
             is_valid = False
 
         aff_tuple = tuple(tuple(float(v) for v in row) for row in M_aff_2x5)
-        poly_tuple = tuple(tuple(float(v) for v in row) for row in W_poly_2x9)
+        poly_tuple = tuple(tuple(float(v) for v in row) for row in W_poly_2x6)
 
         return GazeCalibrationResult(
             affine_matrix_3x3=aff_tuple,
@@ -182,7 +143,7 @@ class GazeCalibrator:
             mae_pixels=mae,
             max_error_pixels=max_err,
             calibration_grade=grade,
-            is_valid=is_valid
+            is_valid=is_valid,
         )
 
     @staticmethod
@@ -193,7 +154,7 @@ class GazeCalibrator:
         head_yaw: float = 0.0,
         head_pitch: float = 0.0,
         screen_width: float = 1920.0,
-        screen_height: float = 1080.0
+        screen_height: float = 1080.0,
     ) -> Tuple[float, float]:
         """
         Maps 2D ocular iris ratio and head orientation to screen pixel coordinates via the 2nd-order polynomial model.

@@ -51,6 +51,7 @@ def test_gaze_calibrator_synthetic_9_points():
     assert res.is_valid is True
     assert res.rmse_pixels <= 35.0
     assert len(res.affine_matrix_3x3) == 2
+    assert len(res.affine_matrix_3x3[0]) == 5
     assert len(res.poly_weights_2x6) == 2
 
     # Test polynomial prediction

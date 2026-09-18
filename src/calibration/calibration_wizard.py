@@ -398,6 +398,7 @@ class CalibrationWizardWindow(QMainWindow):
             existing_profile.gaze_calibration_matrix = [list(row) for row in gaze_res.affine_matrix_3x3]
             existing_profile.neutral_pose_mean = list(head_res.mean_euler_angles)
             existing_profile.neutral_pose_cov_inv = [list(row) for row in head_res.precision_matrix_3x3]
+            existing_profile.gaze_feature_version = 4
             existing_profile.last_recalibration_timestamp = time.time()
             existing_profile.recalibration_count += 1
 

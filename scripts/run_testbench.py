@@ -298,6 +298,7 @@ class TestbenchRunner:
                         command=composed_cmd.action_type.value,
                         timestamp=time.time(),
                         gaze_fixated=is_fixated,
+                        gaze_confidence=float(perc_frame.gaze_confidence),
                         norm_gaze_x=norm_gx,
                         norm_gaze_y=norm_gy,
                     )

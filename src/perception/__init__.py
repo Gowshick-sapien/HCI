@@ -8,12 +8,14 @@ from src.perception.gaze_dwell_tracker import GazeDwellMetrics, GazeDwellTracker
 from src.perception.hand_pose_extractor import HandPoseExtractor
 from src.perception.head_pose_estimator import HeadPoseEstimator
 from src.perception.holt_winters_filter import HoltWintersFilter
+from src.perception.one_euro_filter import OneEuroFilter
 
 __all__ = [
     "FaceMeshExtractor",
     "HeadPoseEstimator",
     "HandPoseExtractor",
     "HoltWintersFilter",
+    "OneEuroFilter",
     "GazeDwellTracker",
     "GazeDwellMetrics",
     "FeaturePipeline",

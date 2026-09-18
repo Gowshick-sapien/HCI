@@ -26,6 +26,7 @@ class FaceMeshExtractor:
     # Correct MediaPipe FaceMesh Landmark Indices
     # Eye 1 (Viewer's Left, Person's Right Eye):
     RIGHT_IRIS_CENTER = 468
+    RIGHT_IRIS_POINTS = [468, 469, 470, 471, 472]
     RIGHT_EYE_OUTER = 33
     RIGHT_EYE_INNER = 133
     RIGHT_EYE_TOP = 159
@@ -34,6 +35,7 @@ class FaceMeshExtractor:
 
     # Eye 2 (Viewer's Right, Person's Left Eye):
     LEFT_IRIS_CENTER = 473
+    LEFT_IRIS_POINTS = [473, 474, 475, 476, 477]
     LEFT_EYE_INNER = 362
     LEFT_EYE_OUTER = 263
     LEFT_EYE_TOP = 386
@@ -91,18 +93,22 @@ class FaceMeshExtractor:
 
         is_blinking = avg_ear < self.ear_blink_threshold
 
-        # 2. Extract Iris Centers in pixel space
-        right_iris_xy = (raw_pts[self.RIGHT_IRIS_CENTER][0], raw_pts[self.RIGHT_IRIS_CENTER][1])
-        left_iris_xy = (raw_pts[self.LEFT_IRIS_CENTER][0], raw_pts[self.LEFT_IRIS_CENTER][1])
+        # 2. Use the centroid of all five refined iris points, not a single
+        # landmark. This is a spatial measurement, not temporal smoothing.
+        right_iris_xy = self._compute_iris_center(raw_pts, self.RIGHT_IRIS_POINTS)
+        left_iris_xy = self._compute_iris_center(raw_pts, self.LEFT_IRIS_POINTS)
 
-        # 3. Compute Normalized Gaze Ratios relative to each eye's own corner bounding box
+        # 3. Express both eyes in the same camera-oriented canthus basis. The
+        # calibration owns screen direction; no fixed cursor inversion is used.
         rx_r, ry_r = self._compute_iris_ratio(
             raw_pts, self.RIGHT_IRIS_CENTER, self.RIGHT_EYE_INNER, self.RIGHT_EYE_OUTER,
-            self.RIGHT_EYE_TOP, self.RIGHT_EYE_BOTTOM
+            self.RIGHT_EYE_TOP, self.RIGHT_EYE_BOTTOM, iris_point=right_iris_xy,
+            is_right_eye=True,
         )
         rx_l, ry_l = self._compute_iris_ratio(
             raw_pts, self.LEFT_IRIS_CENTER, self.LEFT_EYE_INNER, self.LEFT_EYE_OUTER,
-            self.LEFT_EYE_TOP, self.LEFT_EYE_BOTTOM
+            self.LEFT_EYE_TOP, self.LEFT_EYE_BOTTOM, iris_point=left_iris_xy,
+            is_right_eye=False,
         )
 
         iris_ratio_x = float(np.clip((rx_r + rx_l) / 2.0, 0.0, 1.0))
@@ -149,31 +155,41 @@ class FaceMeshExtractor:
             return 0.25
 
     @staticmethod
+    def _compute_iris_center(
+        pts: List[Tuple[float, float, float]], iris_indices: List[int]
+    ) -> Tuple[float, float]:
+        """Return the spatial centroid of the refined iris landmarks."""
+        iris_points = np.asarray([pts[index][:2] for index in iris_indices], dtype=np.float64)
+        center = np.mean(iris_points, axis=0)
+        return float(center[0]), float(center[1])
+
+    @staticmethod
     def _compute_iris_ratio(
         pts: List[Tuple[float, float, float]],
         iris_idx: int,
         inner_idx: int,
         outer_idx: int,
         top_idx: int,
-        bottom_idx: int
+        bottom_idx: int,
+        iris_point: Optional[Tuple[float, float]] = None,
+        is_right_eye: bool = False,
     ) -> Tuple[float, float]:
-        """Calculates normalized position of the iris within its own eye corner bounding box."""
+        """Return an anatomically stable, roll-invariant iris position in camera basis."""
         try:
-            iris_x, iris_y = pts[iris_idx][0], pts[iris_idx][1]
-            inner_x, inner_y = pts[inner_idx][0], pts[inner_idx][1]
-            outer_x, outer_y = pts[outer_idx][0], pts[outer_idx][1]
-            top_x, top_y = pts[top_idx][0], pts[top_idx][1]
-            bottom_x, bottom_y = pts[bottom_idx][0], pts[bottom_idx][1]
+            iris = np.asarray(iris_point if iris_point is not None else pts[iris_idx][:2], dtype=np.float64)
+            inner = np.asarray(pts[inner_idx][:2], dtype=np.float64)
+            outer = np.asarray(pts[outer_idx][:2], dtype=np.float64)
 
-            min_x, max_x = min(inner_x, outer_x), max(inner_x, outer_x)
-            min_y, max_y = min(top_y, bottom_y), max(top_y, bottom_y)
+            eye_axis = (inner - outer) if is_right_eye else (outer - inner)
+            eye_width = float(np.linalg.norm(eye_axis))
+            if eye_width <= 1.0:
+                return 0.5, 0.5
+            eye_axis /= eye_width
+            eye_perp = np.array([-eye_axis[1], eye_axis[0]], dtype=np.float64)
 
-            dx = max_x - min_x
-            dy = max_y - min_y
-
-            rx = (iris_x - min_x) / dx if dx > 1.0 else 0.5
-            ry = (iris_y - min_y) / dy if dy > 1.0 else 0.5
-
+            eye_midpoint = (inner + outer) * 0.5
+            rx = float(0.5 + np.dot(iris - eye_midpoint, eye_axis) / eye_width)
+            ry = float(0.5 + np.dot(iris - eye_midpoint, eye_perp) / eye_width)
             return float(np.clip(rx, 0.0, 1.0)), float(np.clip(ry, 0.0, 1.0))
         except Exception:
             return 0.5, 0.5

@@ -237,6 +237,7 @@ class TestbenchServer:
         gaze_fixated: bool = False,
         norm_gaze_x: Optional[float] = None,
         norm_gaze_y: Optional[float] = None,
+        gaze_confidence: float = 1.0,
     ) -> None:
         """Constructs and broadcasts a standard PERCEPTION_UPDATE packet."""
         nx = float(norm_gaze_x) if norm_gaze_x is not None else float(gaze_x / 1920.0)
@@ -249,6 +250,7 @@ class TestbenchServer:
             "norm_gaze_x": nx,
             "norm_gaze_y": ny,
             "gaze_fixated": bool(gaze_fixated),
+            "gaze_confidence": float(gaze_confidence),
             "active_mode": str(active_mode),
             "gesture_token": str(gesture_token),
             "gesture_confidence": float(gesture_confidence),

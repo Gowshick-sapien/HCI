@@ -102,19 +102,19 @@
     if (!ctxReticle || !canvasReticle) return;
     ctxReticle.clearRect(0, 0, canvasReticle.width, canvasReticle.height);
 
-    // Smooth reticle interpolation (lerp) toward target
+    // Smooth exponential lerp with saccade-snap threshold
     const dx = targetGazeX - currentGazeX;
     const dy = targetGazeY - currentGazeY;
     const dist = Math.hypot(dx, dy);
 
-    if (dist > 180) {
-      // Saccade snap: jump immediately with zero lag
+    if (dist > 200) {
+      // Saccade detected: snap immediately with zero lag
       currentGazeX = targetGazeX;
       currentGazeY = targetGazeY;
     } else if (dist > 0.5) {
-      // Exponential lerp: 60/120 FPS butter-smooth gaze stabilization
-      currentGazeX += dx * 0.35;
-      currentGazeY += dy * 0.35;
+      // Exponential interpolation for butter-smooth fixation
+      currentGazeX += dx * 0.30;
+      currentGazeY += dy * 0.30;
     }
 
     if (activeModality !== "MOUSE_PRIORITY") {
@@ -161,10 +161,11 @@
 
   // Handle incoming perception packet
   function handlePerceptionUpdate(data) {
-    if (data.norm_gaze_x !== undefined && data.norm_gaze_y !== undefined) {
+    const hasUsableGaze = data.gaze_confidence === undefined || data.gaze_confidence > 0.05;
+    if (hasUsableGaze && data.norm_gaze_x !== undefined && data.norm_gaze_y !== undefined) {
       rawGazeX = data.norm_gaze_x * window.innerWidth;
       rawGazeY = data.norm_gaze_y * window.innerHeight;
-    } else if (data.gaze_x !== undefined && data.gaze_y !== undefined) {
+    } else if (hasUsableGaze && data.gaze_x !== undefined && data.gaze_y !== undefined) {
       rawGazeX = (data.gaze_x / 1920.0) * window.innerWidth;
       rawGazeY = (data.gaze_y / 1080.0) * window.innerHeight;
     }
